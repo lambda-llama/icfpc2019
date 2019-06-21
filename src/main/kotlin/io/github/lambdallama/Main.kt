@@ -4,6 +4,10 @@ import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 
+const val OBSTACLE = 'O'.toByte()
+const val WRAPPED = 'W'.toByte()
+const val VOID = 'V'.toByte()
+
 data class Point(val x: Int, val y: Int) {
     companion object {
         fun parse(s: String): Point {
@@ -48,39 +52,39 @@ data class Poly(val contour: List<Point>) {
     }
 }
 
+enum class BoosterType {
+    B, F, L, X;
+
+    fun toByte(): Byte = when (this) {
+        B -> 'B'.toByte()
+        F -> 'F'.toByte()
+        L -> 'L'.toByte()
+        X -> 'X'.toByte()
+    }
+}
+
+inline val Byte.isExtension: Boolean get() = this == BoosterType.B.toByte()
+inline val Byte.isFastWheels: Boolean get() = this == BoosterType.F.toByte()
+inline val Byte.isDrill: Boolean get() = this == BoosterType.L.toByte()
+inline val Byte.isMysteriousPoint: Boolean get() = this == BoosterType.X.toByte()
+
 data class Booster(
-    val type: Type,
+    val type: BoosterType,
     val loc: Point
 ) {
     companion object {
-        enum class Type {
-            B, F, L, X;
-
-            fun toByte(): Byte = when (this) {
-                B -> 'B'.toByte()
-                F -> 'F'.toByte()
-                L -> 'L'.toByte()
-                X -> 'X'.toByte()
-            }
-
-        }
-
         fun parse(s: String): Booster = Booster(
-            type = Type.valueOf(s.take(1)),
+            type = BoosterType.valueOf(s.take(1)),
             loc = Point.parse(s.drop(1)))
     }
 }
 
-inline val Byte.isExtension: Boolean get() = this == 'B'.toByte()
-inline val Byte.isFastWheels: Boolean get() = this == 'F'.toByte()
-inline val Byte.isDrill: Boolean get() = this == 'L'.toByte()
-inline val Byte.isMysteriousPoint: Boolean get() = this == 'X'.toByte()
-
 class ByteMatrix(
     numRows: Int,
-    private val numCols: Int
+    private val numCols: Int,
+    value: Byte
 ) {
-    private val buf: ByteArray = ByteArray(numRows * numCols)
+    private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
 
     operator fun set(p: Poly, value: Byte) {
 
@@ -97,10 +101,12 @@ class ByteMatrix(
     }
 }
 
+/** It this cell inside an obstacle? */
+inline val Byte.isObstacle: Boolean get() = this == OBSTACLE
 /** Has the cell been wrapped by Wrappy? */
-inline val Byte.isWrapped: Boolean get() = this == 'W'.toByte()
+inline val Byte.isWrapped: Boolean get() = this == WRAPPED
 /** Is it out of bounds of the map? */
-inline val Byte.isVoid: Boolean get() = this == 'V'.toByte()
+inline val Byte.isVoid: Boolean get() = this == VOID
 
 data class State(
     val grid: ByteMatrix,
@@ -119,10 +125,10 @@ data class Task(
         val (maxX, maxY) = topRight
         val numRows = maxY - minY
         val numCols = maxX - minX
-        val grid = ByteMatrix(numRows, numCols)
+        val grid = ByteMatrix(numRows, numCols, VOID)
 
         for (obstacle in obstacles) {
-
+            grid[obstacle] = OBSTACLE
         }
 
         for (booster in boosters) {
