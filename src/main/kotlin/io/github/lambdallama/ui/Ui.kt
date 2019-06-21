@@ -63,7 +63,11 @@ private val FRAME = JFrame("HelloWorldSwing").apply {
 private var STATE: Map? = null
 
 private class Canvas : JPanel() {
-    val cellSize = 20
+    val cellSize: Int get() {
+        val map = STATE ?: return 80
+        return if (map.width < 100 && map.height < 100) 80 else 20
+    }
+
     private val pad = 1
 
     override fun getPreferredSize(): Dimension {
