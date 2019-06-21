@@ -1,29 +1,28 @@
 package io.github.lambdallama
 
+interface Strategy {
+    fun run(state: State): List<Action>
+}
+
 val DX = arrayOf(-1, 0, 1, 0)
 val DY = arrayOf(0, -1, 0, 1)
-val DIR_NAMES = "AWDS"
 
-class Naive(var state: State) {
-    private lateinit var board: ByteMatrix
-    private lateinit var path: String
-
-    fun go(u: Point) {
-        board[u] = Cell.WRAPPED
+object Naive: Strategy {
+    private fun go(grid: ByteMatrix, u: Point, path: MutableList<Action>) {
+        grid[u] = Cell.WRAPPED
         for (i in 0..3) {
             val v = Point(u.x + DX[i], u.y + DY[i])
-            if (board.contains(v) && board[v] == Cell.FREE) {
-                path += DIR_NAMES[i]
-                go(v)
-                path += DIR_NAMES[i xor 2]
+            if (v in grid && grid[v] == Cell.FREE) {
+                path.add(Move(i))
+                go(grid, v, path)
+                path.add(Move(i xor 2))
             }
         }
     }
 
-    fun traverse(start: Point): String {
-        board = state.grid
-        path = ""
-        go(start)
-        return path
+    override fun run(state: State): List<Action> {
+        val actions = mutableListOf<Action>()
+        go(state.grid, state.robot.position, actions)
+        return actions
     }
 }

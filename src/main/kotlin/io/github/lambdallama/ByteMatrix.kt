@@ -15,7 +15,7 @@ class ByteMatrix private constructor(
 
     operator fun set(p: Point, value: Cell) = set(p.y, p.x, value)
 
-    fun contains(p: Point): Boolean =
+    operator fun contains(p: Point): Boolean =
         p.x >= 0 && p.y >= 0 && p.x < dim.x && p.y < dim.y
 
     private operator fun get(i: Int, j: Int) = Cell(buf[i * numCols + j])

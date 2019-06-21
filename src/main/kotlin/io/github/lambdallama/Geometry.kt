@@ -22,6 +22,8 @@ inline class Point(val xy: Long) {
     }
 
     operator fun plus(other: Point): Point = Point(xy + other.xy)
+
+    override fun toString() = "($x,$y)"
 }
 
 data class Poly(val contour: List<Point>) {

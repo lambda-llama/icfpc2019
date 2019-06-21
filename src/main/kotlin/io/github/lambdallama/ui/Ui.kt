@@ -69,10 +69,11 @@ private var STATE: Map? = null
 private class Canvas : JPanel() {
     val cellSize: Int
         get() {
-            val map = STATE ?: return 80
-            if (map.width < 20 && map.height < 20) return 80
-            if (map.width < 80 && map.height < 80) return 40
-            return 20
+            return 5
+//            val map = STATE ?: return 80
+//            if (map.width < 20 && map.height < 20) return 80
+//            if (map.width < 80 && map.height < 80) return 40
+//            return 20
         }
 
     private val pad = 1
