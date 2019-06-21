@@ -37,12 +37,17 @@ data class State(
             }
 
             return State(
-                grid,
-                robot = Robot(position = initialLoc, tentacles = listOf(
-                    Point(1, 0),
-                    Point(1, 1),
-                    Point(1, -1)
-                )))
+                    grid,
+                    robot = Robot(
+                            position = initialLoc,
+                            tentacles = listOf(
+                                    Point(1, 0),
+                                    Point(1, 1),
+                                    Point(1, -1)
+                            ),
+                            orientation = Orientation.RIGHT
+                    )
+            )
         }
     }
 }

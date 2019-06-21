@@ -22,8 +22,37 @@ inline class Point(val xy: Long) {
     }
 
     operator fun plus(other: Point): Point = Point(xy + other.xy)
+    operator fun times(other: Point): Int = x * other.x + y * other.y
+
+    fun rotate(orientation: Orientation) = Point(
+            orientation.ax * this,
+            orientation.ay * this
+    )
 
     override fun toString() = "($x,$y)"
+}
+
+enum class Orientation(
+        val ax: Point,
+        val ay: Point
+) {
+    RIGHT(
+            ax = Point(1, 0),
+            ay = Point(0, 1)
+    ),
+    UP(
+            ax = Point(0, -1),
+            ay = Point(1, 0)
+    ),
+    LEFT(
+            ax = Point(-1, 0),
+            ay = Point(0, -1)
+    ),
+    DOWN(
+
+            ax = Point(0, 1),
+            ay = Point(1, 0)
+    )
 }
 
 data class Poly(val contour: List<Point>) {
@@ -105,7 +134,7 @@ fun List<Poly>.project(buf: ByteMatrix, value: Cell) {
             if (verticals.containsKey(x)) {
                 for (v in verticals[x]) {
                     // ay <= y + 1/2 <= by => 2 ay <= 2 y + 1 <= 2 by
-                    if (2 * y + 1 in 2*v.ay..2*v.by) {
+                    if (2 * y + 1 in 2 * v.ay..2 * v.by) {
                         count++
                     }
                 }
