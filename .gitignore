@@ -3,5 +3,5 @@ out
 .gradle
 build
 out
-.build
+solutions
 *.sol
