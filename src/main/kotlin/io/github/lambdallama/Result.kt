@@ -1,37 +1,69 @@
 package io.github.lambdallama
 
-const val DIR_NAMES = "AWDS"
+interface Action
 
-sealed class Action
-
-data class Move(
-    val direction: Int // [0, 4)
-) : Action() {
-    override fun toString() = DIR_NAMES[direction].toString()
+interface Move: Action {
+    val dx: Int
+    val dy: Int
+    val flipped: Move
 }
 
-data class Turn(
-    val direction: Int // {-1, +1}
-) : Action() {
-    override fun toString() = if (direction == 1) "E" else "Q"
+object MoveUp: Move {
+    override val dx = 0
+    override val dy = +1
+    override val flipped = MoveDown
+
+    override fun toString() = "W"
 }
 
-data class Attach(val location: Point) : Action() {
+object MoveDown: Move {
+    override val dx = 0
+    override val dy = -1
+    override val flipped = MoveUp
+
+    override fun toString() = "S"
+}
+
+object MoveLeft: Move {
+    override val dx = -1
+    override val dy = 0
+    override val flipped = MoveRight
+
+    override fun toString() = "A"
+}
+
+object MoveRight:Move {
+    override val dx = +1
+    override val dy = 0
+    override val flipped = MoveLeft
+
+    override fun toString() = "D"
+}
+
+object TurnClockwise: Action {
+    override fun toString() = "E"
+}
+
+object TurnCounter: Action {
+    override fun toString() = "Q"
+}
+
+data class Attach(val location: Point) : Action {
     override fun toString() = "B$location"
 }
 
-object Accelerate : Action() {
+object Accelerate : Action {
     override fun toString() = "F"
 }
 
-object Drill : Action() {
+object Drill : Action {
     override fun toString() = "L"
 }
 
-class Teleport(private val location: Point) : Action() {
+class Teleport(private val location: Point) : Action {
     override fun toString() = "R$location"
 }
 
-object NoOp : Action() {
+object NoOp : Action {
     override fun toString() = "Z"
 }

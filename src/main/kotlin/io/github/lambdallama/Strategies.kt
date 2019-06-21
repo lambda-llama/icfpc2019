@@ -4,18 +4,17 @@ interface Strategy {
     fun run(state: State): List<Action>
 }
 
-val DX = arrayOf(-1, 0, 1, 0)
-val DY = arrayOf(0, -1, 0, 1)
-
 object Naive: Strategy {
+    private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
+
     private fun go(grid: ByteMatrix, u: Point, path: MutableList<Action>) {
         grid[u] = Cell.WRAPPED
-        for (i in 0..3) {
-            val v = Point(u.x + DX[i], u.y + DY[i])
+        for (m in MOVES) {
+            val v = Point(u.x + m.dx, u.y + m.dy)
             if (v in grid && grid[v] == Cell.FREE) {
-                path.add(Move(i))
+                path.add(m)
                 go(grid, v, path)
-                path.add(Move(i xor 2))
+                path.add(m.flipped)
             }
         }
     }
