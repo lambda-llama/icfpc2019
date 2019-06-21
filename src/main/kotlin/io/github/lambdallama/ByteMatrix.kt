@@ -2,13 +2,16 @@ package io.github.lambdallama
 
 import java.lang.StringBuilder
 
-class ByteMatrix(
+class ByteMatrix private constructor(
     private val numRows: Int,
     private val numCols: Int,
-    value: Cell
+    private val buf: ByteArray
 ) {
+    constructor(numRows: Int,
+                numCols: Int, value: Cell)
+        : this(numRows, numCols, ByteArray(numRows * numCols).apply { fill(value.byte) })
+
     val dim: Point get() = Point(numCols, numRows)
-    private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value.byte) }
 
     operator fun get(p: Point) = get(p.y, p.x)
 
@@ -22,6 +25,8 @@ class ByteMatrix(
     private operator fun set(i: Int, j: Int, value: Cell) {
         buf[i * numCols + j] = value.byte
     }
+
+    fun clone(): ByteMatrix = ByteMatrix(numRows, numCols, buf = buf.clone())
 
     override fun toString(): String {
         val sb = StringBuilder()
