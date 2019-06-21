@@ -4,6 +4,7 @@ import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 
+// TODO(superbobry): make these inline classes.
 const val OBSTACLE = 'O'.toByte()
 const val WRAPPED = 'W'.toByte()
 const val FREE = ' '.toByte()
@@ -89,16 +90,30 @@ class ByteMatrix(
     private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
 
     operator fun set(p: Poly, value: Byte) {
-
+        // TODO(superbobry): fill the contour.
+        for (i in 1 until p.contour.size) {
+            val a = p.contour[i - 1]
+            val b = p.contour[i]
+            if (a.x == b.x) {
+                for (y in min(a.y, b.y)..max(a.y, b.y)) {
+                    set(a.x, y, value)
+                }
+            } else {
+                check(a.y == b.y)
+                for (x in min(a.x, b.x)..max(a.x, b.x)) {
+                    set(x, a.y, value)
+                }
+            }
+        }
     }
 
     operator fun get(p: Point) = get(p.y, p.x)
 
     operator fun set(p: Point, value: Byte) = set(p.y, p.x, value)
 
-    operator fun get(i: Int, j: Int) = buf[i * numCols + j]
+    private operator fun get(i: Int, j: Int) = buf[i * numCols + j]
 
-    operator fun set(i: Int, j: Int, value: Byte) {
+    private operator fun set(i: Int, j: Int, value: Byte) {
         buf[i * numCols + j] = value
     }
 }
@@ -167,7 +182,6 @@ data class Task(
     }
 }
 
-
 fun main(args: Array<String>) {
     launchGui()
     for (i in 0 until 100) {
@@ -177,5 +191,6 @@ fun main(args: Array<String>) {
         })
     }
 
-    println(Task.parse(File("part-1-initial/prob-001.desc").readText()))
+    val task = Task.parse(File("part-1-initial/prob-001.desc").readText())
+    task.toState()
 }
