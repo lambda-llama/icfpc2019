@@ -138,7 +138,7 @@ class Naive(var state: State) {
 }
 
 fun main(args: Array<String>) {
-    val task = Task.parse(File("part-1-initial/prob-001.desc").readText())
+    val task = Task.parse(File("part-1-initial/prob-002.desc").readText())
     val state = task.toState()
 
     launchGui()

@@ -86,10 +86,10 @@ private class Canvas : JPanel() {
         for (x in 0 until map.width) {
             for (y in 0 until map.height) {
                 g.color = when (map[x, y]) {
-                    UiCell.WALL -> Color.BLACK
-                    UiCell.FREE -> Color.GRAY
+                    UiCell.WALL -> Color.DARK_GRAY
+                    UiCell.FREE -> Color.WHITE
                     UiCell.WRAPPED -> Color.YELLOW
-                    UiCell.VOID -> Color.WHITE
+                    UiCell.VOID -> Color.GRAY
                     UiCell.ROBOT -> Color.ORANGE
                     else -> kotlin.error("bad cell")
                 }
@@ -105,14 +105,15 @@ private class Canvas : JPanel() {
 
         for ((point, pill) in map.pills) {
             val (x, y) = point
-            g.color = when (pill) {
+            val color = when (pill) {
                 Pill.ROBOT -> Color.RED
-                Pill.BOOST_B -> Color.MAGENTA
-                Pill.BOOST_F -> Color.BLUE
+                Pill.BOOST_B -> Color.YELLOW
+                Pill.BOOST_F -> Color(210,105,30)
                 Pill.BOOST_L -> Color.GREEN
-                Pill.BOOST_X -> Color.PINK
+                Pill.BOOST_X -> Color.BLUE
                 else -> error("bad pill")
             }
+            g.color = color
             val (px, py) = map.topLeftCorner(x, y)
             if (pill == Pill.ROBOT) {
                 g.fillRect(
@@ -122,11 +123,19 @@ private class Canvas : JPanel() {
                     cellSize / 2
                 )
             } else {
+                g.color = Color.BLACK
                 g.fillOval(
                     px + cellSize / 4,
                     py + cellSize / 4,
                     cellSize / 2,
                     cellSize / 2
+                )
+                g.color = color
+                g.fillOval(
+                    px + cellSize / 4 + 2,
+                    py + cellSize / 4 + 2,
+                    cellSize / 2 - 4,
+                    cellSize / 2 - 4
                 )
             }
         }
