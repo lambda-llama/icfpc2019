@@ -11,7 +11,7 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    compile("no.tornado:tornadofx:1.7.17")
+    // compile("no.tornado:tornadofx:1.7.17")
 }
 
 javafx {

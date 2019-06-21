@@ -52,10 +52,17 @@ data class Booster(
     val type: Type,
     val loc: Point
 ) {
-
     companion object {
         enum class Type {
-            B, F, L, X
+            B, F, L, X;
+
+            fun toByte(): Byte = when (this) {
+                B -> 'B'.toByte()
+                F -> 'F'.toByte()
+                L -> 'L'.toByte()
+                X -> 'X'.toByte()
+            }
+
         }
 
         fun parse(s: String): Booster = Booster(
@@ -63,6 +70,11 @@ data class Booster(
             loc = Point.parse(s.drop(1)))
     }
 }
+
+inline val Byte.isExtension: Boolean get() = this == 'B'.toByte()
+inline val Byte.isFastWheels: Boolean get() = this == 'F'.toByte()
+inline val Byte.isDrill: Boolean get() = this == 'L'.toByte()
+inline val Byte.isMysteriousPoint: Boolean get() = this == 'X'.toByte()
 
 class ByteMatrix(
     numRows: Int,
@@ -120,16 +132,5 @@ data class Task(
 
 
 fun main(args: Array<String>) {
-    startUI()
-    for (i in 0..1000) {
-        Thread.sleep(1000)
-        setMap(Map(10, 10) { _, _ ->
-            when (i % 3) {
-                0 -> EMPTY
-                1 -> WALL
-                else -> WRAPPED
-            }
-        })
-    }
     println(Task.parse(File("part-1-initial/prob-001.desc").readText()))
 }
