@@ -2,7 +2,7 @@ package io.github.lambdallama
 
 data class State(
     val grid: ByteMatrix,
-    val wrappy: List<Point>
+    val robot: Robot
 )
 
 inline class Cell(val byte: Byte) {

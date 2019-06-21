@@ -20,6 +20,8 @@ inline class Point(val xy: Long) {
             return Point(x.toInt(), y.toInt())
         }
     }
+
+    operator fun plus(other: Point): Point = Point(xy + other.xy)
 }
 
 data class Poly(val contour: List<Point>) {

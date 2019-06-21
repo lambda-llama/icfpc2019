@@ -3,7 +3,6 @@ package io.github.lambdallama
 import io.github.lambdallama.ui.*
 import io.github.lambdallama.ui.Map
 import java.io.File
-import java.lang.IllegalStateException
 
 fun main(args: Array<String>) {
     // ./gradlew run --args=path/to/prob-XXX.desc
@@ -16,7 +15,7 @@ fun main(args: Array<String>) {
     draw(Map(state.grid.dim,
         { p ->
             val c = state.grid[p]
-            if (state.wrappy.contains(p)) {
+            if (state.robot.parts.contains(p)) {
                 pills += p to Pill.ROBOT
             }
             when (c) {

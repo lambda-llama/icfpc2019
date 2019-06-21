@@ -21,13 +21,13 @@ data class Task(
             grid[booster.loc] = booster.type.toCell()
         }
 
-        val (initialX, initialY) = initialLoc
-        // TODO(superbobry): filter invalid points.
-        val wrappy = listOf(
-            Point(initialX + 1, initialY),
-            Point(initialX + 1, initialY + 1),
-            Point(initialX + 1, initialY - 1))
-        return State(grid, wrappy)
+        return State(
+                grid,
+                robot = Robot(position = initialLoc, tentacles = listOf(
+                        Point(1, 0),
+                        Point(1, 1),
+                        Point(1, -1)
+                )))
     }
 
     companion object {
