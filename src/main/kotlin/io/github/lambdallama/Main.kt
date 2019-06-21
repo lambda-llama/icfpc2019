@@ -4,7 +4,20 @@ import io.github.lambdallama.ui.*
 import io.github.lambdallama.ui.Map
 import java.io.File
 
+fun nonInteractiveMain(path: String) {
+    val state = State.parse(File(path).readText())
+    val solutionFile = File(path.substring(0, path.length - 5) + ".sol")
+    val solution = Naive(state).traverse(state.robot.position)
+    solutionFile.writeText(solution)
+}
+
 fun main(args: Array<String>) {
+    when (args[0]) {
+        "--non-interactive" -> {
+            return nonInteractiveMain(args[1])
+        }
+    }
+
     // ./gradlew run --args=path/to/prob-XXX.desc
     val path = args.firstOrNull() ?: throw IllegalStateException(
         "path/to/prob-XXX.desc")
