@@ -226,20 +226,30 @@ private class Canvas(val viewState: ViewState, val frameSize: () -> Dimension) :
                     cellSize / 2
                 )
             } else {
-                g.color = Color.BLACK
-                g.fillOval(
-                    px + cellSize / 4,
-                    py + cellSize / 4,
-                    cellSize / 2,
-                    cellSize / 2
-                )
-                g.color = color
-                g.fillOval(
-                    px + cellSize / 4 + 2,
-                    py + cellSize / 4 + 2,
-                    cellSize / 2 - 4,
-                    cellSize / 2 - 4
-                )
+                if (cellSize >= 10) {
+                    g.color = Color.BLACK
+                    g.fillOval(
+                        px + cellSize / 4,
+                        py + cellSize / 4,
+                        cellSize / 2,
+                        cellSize / 2
+                    )
+                    g.color = color
+                    g.fillOval(
+                        px + cellSize / 4 + 2,
+                        py + cellSize / 4 + 2,
+                        cellSize / 2 - 4,
+                        cellSize / 2 - 4
+                    )
+                } else {
+                    g.fillOval(
+                        px + cellSize / 4,
+                        py + cellSize / 4,
+                        cellSize / 2,
+                        cellSize / 2
+                    )
+
+                }
             }
         }
     }
