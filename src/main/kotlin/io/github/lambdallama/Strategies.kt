@@ -54,7 +54,7 @@ object NaiveIterative : Strategy {
     }
 }
 
-object Greedy : Strategy {
+abstract class Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
         state.robot.wrap(grid)
@@ -74,6 +74,8 @@ object Greedy : Strategy {
         }
     }
 
+    abstract fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move>
+
     private fun closestFree(grid: ByteMatrix, initial: Point): List<Point> {
         val backtrack = mutableMapOf<Point, Point?>(initial to null)
         val q = ArrayDeque<Point>()
@@ -85,7 +87,7 @@ object Greedy : Strategy {
                 break
             }
 
-            for (candidate in MOVES) {
+            for (candidate in candidates(u, backtrack)) {
                 val v = candidate(u)
                 if (v in grid
                     && grid[v] != Cell.OBSTACLE && grid[v] != Cell.VOID
@@ -102,5 +104,17 @@ object Greedy : Strategy {
             u = backtrack[u]
         }
         return path.reversed()
+    }
+}
+
+object GreedyUnordered: Greedy() {
+    override fun candidates(u: Point, backtrack: Map<Point, Point?>) = MOVES
+}
+
+object GreedySameMoveFirst: Greedy() {
+    override fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move> {
+        val origin = backtrack[u] ?: return MOVES
+        val move = MOVES.first { it(origin) == u }
+        return arrayOf(move) + MOVES
     }
 }

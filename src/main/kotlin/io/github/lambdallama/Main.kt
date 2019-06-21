@@ -7,7 +7,11 @@ fun nonInteractiveMain(path: String) {
     val state = State.parse(File(path).readText())
     println("Map: $path, max points: ${state.maxPoints}")
 
-    val solutions = arrayOf(NaiveIterative, Greedy).map {
+    val solutions = arrayOf(
+        NaiveIterative,
+        GreedyUnordered,
+        GreedySameMoveFirst
+    ).map {
         val actions = mutableListOf<Action>()
         it.run(state.clone(), actions::plusAssign)
         System.err.println("${it.javaClass.simpleName}: ${actions.size}")
@@ -31,5 +35,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    Greedy.run(state, visualize(state, true))
+    NaiveIterative.run(state, visualize(state, true))
 }
