@@ -22,13 +22,13 @@ fun draw(map: Map) {
     FRAME.repaint()
 }
 
-inline class Cell(private val value: Byte) {
+inline class UiCell(private val value: Byte) {
     companion object {
-        val FREE = Cell(0)
-        val WALL = Cell(1)
-        val WRAPPED = Cell(2)
-        val VOID = Cell(3)
-        val ROBOT = Cell(4)
+        val FREE = UiCell(0)
+        val WALL = UiCell(1)
+        val WRAPPED = UiCell(2)
+        val VOID = UiCell(3)
+        val ROBOT = UiCell(4)
     }
 }
 
@@ -45,11 +45,11 @@ inline class Pill(private val value: Byte) {
 
 class Map(
     val dim: Point,
-    init: (Point) -> Cell = { _ -> Cell.FREE },
+    init: (Point) -> UiCell = { _ -> UiCell.FREE },
     val pills: List<Pair<Point, Pill>>
 ) {
-    private val cells: Array<Cell> = Array(height * width) { i -> init(Point(i % width, i / width)) }
-    operator fun get(x: Int, y: Int): Cell =
+    private val cells: Array<UiCell> = Array(height * width) { i -> init(Point(i % width, i / width)) }
+    operator fun get(x: Int, y: Int): UiCell =
         cells[x + y * width]
 }
 
@@ -84,11 +84,11 @@ private class Canvas : JPanel() {
         for (x in 0 until map.width) {
             for (y in 0 until map.height) {
                 g.color = when (map[x, y]) {
-                    Cell.WALL -> Color.BLACK
-                    Cell.FREE -> Color.GRAY
-                    Cell.WRAPPED -> Color.YELLOW
-                    Cell.VOID -> Color.WHITE
-                    Cell.ROBOT -> Color.ORANGE
+                    UiCell.WALL -> Color.BLACK
+                    UiCell.FREE -> Color.GRAY
+                    UiCell.WRAPPED -> Color.YELLOW
+                    UiCell.VOID -> Color.WHITE
+                    UiCell.ROBOT -> Color.ORANGE
                     else -> kotlin.error("bad cell")
                 }
                 val (px, py) = map.topLeftCorner(x, y)

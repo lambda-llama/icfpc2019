@@ -10,10 +10,28 @@ import kotlin.math.max
 import kotlin.math.min
 
 // TODO(superbobry): make these inline classes.
-const val OBSTACLE = 'O'.toByte()
-const val WRAPPED = 'W'.toByte()
-const val FREE = ' '.toByte()
-const val VOID = 'V'.toByte()
+inline class Cell(val byte: Byte) {
+    /** It this cell inside an obstacle? */
+    inline val isObstacle: Boolean get() = this == OBSTACLE
+    /** Has the cell been wrapped by Wrappy? */
+    inline val isWrapped: Boolean get() = this == WRAPPED
+    /** Is it out of bounds of the map? */
+    inline val isVoid: Boolean get() = this == VOID
+    /** Is it within bounds of the map and could be wrapped? */
+    inline val isFree: Boolean get() = this == FREE
+
+    companion object {
+        val OBSTACLE = Cell('O'.toByte())
+        val WRAPPED = Cell('W'.toByte())
+        val FREE = Cell(' '.toByte())
+        val VOID = Cell('V'.toByte())
+
+        val B_EXTENSION: Cell get() = Cell('B'.toByte())
+        val B_FAST_WHEELS: Cell get() = Cell('F'.toByte())
+        val B_DRILL: Cell get() = Cell('L'.toByte())
+        val B_MYSTERIOUS_POINT: Cell get() = Cell('X'.toByte())
+    }
+}
 
 data class Point(val x: Int, val y: Int) {
     companion object {
@@ -80,7 +98,7 @@ data class Poly(val contour: List<Point>) {
 data class Vertical(val x: Int, val ay: Int, val by: Int) {
 }
 
-fun List<Poly>.project(buf: ByteMatrix, value: Byte) {
+fun List<Poly>.project(buf: ByteMatrix, value: Cell) {
     if (isEmpty()) {
         return
     }
@@ -120,18 +138,13 @@ fun List<Poly>.project(buf: ByteMatrix, value: Byte) {
 enum class BoosterType {
     B, F, L, X;
 
-    fun toByte(): Byte = when (this) {
-        B -> 'B'.toByte()
-        F -> 'F'.toByte()
-        L -> 'L'.toByte()
-        X -> 'X'.toByte()
+    fun toCell(): Cell = when (this) {
+        B -> Cell.B_EXTENSION
+        F -> Cell.B_FAST_WHEELS
+        L -> Cell.B_DRILL
+        X -> Cell.B_MYSTERIOUS_POINT
     }
 }
-
-inline val Byte.isExtension: Boolean get() = this == BoosterType.B.toByte()
-inline val Byte.isFastWheels: Boolean get() = this == BoosterType.F.toByte()
-inline val Byte.isDrill: Boolean get() = this == BoosterType.L.toByte()
-inline val Byte.isMysteriousPoint: Boolean get() = this == BoosterType.X.toByte()
 
 data class Booster(
     val type: BoosterType,
@@ -147,30 +160,30 @@ data class Booster(
 class ByteMatrix(
     val numRows: Int,
     val numCols: Int,
-    value: Byte
+    value: Cell
 ) {
     val dim: Point get() = Point(numCols, numRows)
-    private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
+    private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value.byte) }
 
     operator fun get(p: Point) = get(p.y, p.x)
 
-    operator fun set(p: Point, value: Byte) = set(p.y, p.x, value)
+    operator fun set(p: Point, value: Cell) = set(p.y, p.x, value)
 
     fun contains(p: Point): Boolean {
         return p.x >= 0 && p.y >= 0 && p.x < numRows && p.y < numCols
     }
 
-    private operator fun get(i: Int, j: Int) = buf[i * numCols + j]
+    private operator fun get(i: Int, j: Int) = Cell(buf[i * numCols + j])
 
-    private operator fun set(i: Int, j: Int, value: Byte) {
-        buf[i * numCols + j] = value
+    private operator fun set(i: Int, j: Int, value: Cell) {
+        buf[i * numCols + j] = value.byte
     }
 
     override fun toString(): String {
         val sb = StringBuilder()
         for (y in 0 until numRows) {
             for (x in 0 until numCols) {
-                sb.append(get(y, x).toChar())
+                sb.append(get(y, x).byte.toChar())
             }
 
             sb.append('\n')
@@ -180,14 +193,6 @@ class ByteMatrix(
     }
 }
 
-/** It this cell inside an obstacle? */
-inline val Byte.isObstacle: Boolean get() = this == OBSTACLE
-/** Has the cell been wrapped by Wrappy? */
-inline val Byte.isWrapped: Boolean get() = this == WRAPPED
-/** Is it out of bounds of the map? */
-inline val Byte.isVoid: Boolean get() = this == VOID
-/** Is it within bounds of the map and could be wrapped? */
-inline val Byte.isFree: Boolean get() = this == FREE
 
 data class State(
     val grid: ByteMatrix,
@@ -208,11 +213,11 @@ data class Task(
         check(minX == 0 && minY == 0)
         val numRows = maxY - minY
         val numCols = maxX - minX
-        val grid = ByteMatrix(numRows, numCols, VOID)
-        listOf(map).project(grid, FREE)
-        obstacles.project(grid, OBSTACLE)
+        val grid = ByteMatrix(numRows, numCols, Cell.VOID)
+        listOf(map).project(grid, Cell.FREE)
+        obstacles.project(grid, Cell.OBSTACLE)
         for (booster in boosters) {
-            grid[booster.loc] = booster.type.toByte()
+            grid[booster.loc] = booster.type.toCell()
         }
 
         val (initialX, initialY) = initialLoc
@@ -252,11 +257,11 @@ class Naive(var state: State) {
     private lateinit var board: ByteMatrix
     private lateinit var path: String
     fun go(u: Point) {
-        board[u] = WRAPPED
+        board[u] = Cell.WRAPPED
         for (i in 0..3) {
             val v = Point(u.x + DX[i], u.y + DY[i])
             println(v)
-            if (board.contains(v) && board[v] == FREE) {
+            if (board.contains(v) && board[v] == Cell.FREE) {
                 path += DIR_NAMES[i]
                 go(v)
                 path += DIR_NAMES[i xor 2]
@@ -284,19 +289,20 @@ fun main(args: Array<String>) {
             if (state.wrappy.contains(p)) {
                 pills += p to Pill.ROBOT
             }
-            when {
-                c.isObstacle -> Cell.WALL
-                c.isFree -> Cell.FREE
-                c.isWrapped -> Cell.WRAPPED
-                c.isVoid -> Cell.VOID
+            when (c) {
+                Cell.OBSTACLE -> UiCell.WALL
+                Cell.OBSTACLE -> UiCell.WALL
+                Cell.FREE -> UiCell.FREE
+                Cell.WRAPPED -> UiCell.WRAPPED
+                Cell.VOID -> UiCell.VOID
                 else -> {
-                    when {
-                        c.isExtension -> pills += p to Pill.BOOST_B
-                        c.isDrill -> pills += p to Pill.BOOST_L
-                        c.isFastWheels -> pills += p to Pill.BOOST_F
-                        c.isMysteriousPoint -> pills += p to Pill.BOOST_X
+                    when (c) {
+                        Cell.B_EXTENSION -> pills += p to Pill.BOOST_B
+                        Cell.B_DRILL -> pills += p to Pill.BOOST_L
+                        Cell.B_FAST_WHEELS -> pills += p to Pill.BOOST_F
+                        Cell.B_MYSTERIOUS_POINT-> pills += p to Pill.BOOST_X
                     }
-                    Cell.FREE
+                    UiCell.FREE
                 }
             }
 
