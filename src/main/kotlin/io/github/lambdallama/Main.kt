@@ -8,7 +8,7 @@ fun main(args: Array<String>) {
     // ./gradlew run --args=path/to/prob-XXX.desc
     val path = args.firstOrNull() ?: throw IllegalStateException(
         "path/to/prob-XXX.desc")
-    val state = Task.parse(File(path).readText()).toState()
+    val state = State.parse(File(path).readText())
 
     launchGui()
     val pills: MutableList<Pair<Point, Pill>> = mutableListOf()
