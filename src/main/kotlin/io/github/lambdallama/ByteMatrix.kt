@@ -1,7 +1,5 @@
 package io.github.lambdallama
 
-import java.lang.StringBuilder
-
 class ByteMatrix private constructor(
     private val numRows: Int,
     private val numCols: Int,
@@ -24,20 +22,5 @@ class ByteMatrix private constructor(
 
     private operator fun set(i: Int, j: Int, value: Cell) {
         buf[i * numCols + j] = value.byte
-    }
-
-    fun clone(): ByteMatrix = ByteMatrix(numRows, numCols, buf = buf.clone())
-
-    override fun toString(): String {
-        val sb = StringBuilder()
-        for (y in 0 until numRows) {
-            for (x in 0 until numCols) {
-                sb.append(get(y, x).byte.toChar())
-            }
-
-            sb.append('\n')
-        }
-
-        return sb.toString()
     }
 }
