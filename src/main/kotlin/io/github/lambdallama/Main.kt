@@ -47,7 +47,7 @@ data class Poly(val contour: List<Point>) {
             val a = contour[i]
             val b = contour[(i + 1) % contour.size]
             if (a.x == b.x) {  // vertical.
-                if (p.y in a.y..b.y) {
+                if (p.x < a.x && p.y in a.y..b.y) {
                     count++
                 }
             } else {  // horizontal.
@@ -55,7 +55,7 @@ data class Poly(val contour: List<Point>) {
             }
         }
 
-        return count > 0
+        return count % 2 == 0
     }
 
     companion object {
@@ -237,6 +237,7 @@ class Naive(var state: State) {
             }
         }
     }
+
     fun traverse(start: Point): String {
         board = state.grid
         path = ""
@@ -248,9 +249,9 @@ class Naive(var state: State) {
 fun main(args: Array<String>) {
     val task = Task.parse(File("part-1-initial/prob-001.desc").readText())
     val state = task.toState()
-    val naive = Naive(state)
-    // TODO(alexeyc): change to the real start point
-    println(naive.go(Point(0, 0)))
+//    val naive = Naive(state)
+//    // TODO(alexeyc): change to the real start point
+//    println(naive.go(Point(0, 0)))
 
     launchGui()
     for (i in 0 until 100) {
@@ -258,7 +259,5 @@ fun main(args: Array<String>) {
         draw(Map(5, 5, { _, _ -> Cell.FREE }, listOf(Point(0, 0) to Pill.ROBOT)))
     }
 
-    val task = Task.parse(File("part-1-initial/prob-005.desc").readText())
-    val state = task.toState()
     println(state.grid)
 }
