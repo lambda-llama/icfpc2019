@@ -1,3 +1,5 @@
+package io.github.lambdallama
+
 import tornadofx.*
 
 class HelloWorld : View() {

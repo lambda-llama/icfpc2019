@@ -21,5 +21,5 @@ tasks {
     }
 }
 application {
-    mainClassName = "icfpc2019.AppKt"
+    mainClassName = "io.github.lambdallama.UiKt"
 }
