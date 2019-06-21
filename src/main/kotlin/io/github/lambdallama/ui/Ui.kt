@@ -4,22 +4,22 @@ import io.github.lambdallama.Point
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
-import javax.swing.JFrame
-import javax.swing.JPanel
-import javax.swing.SwingUtilities
+import java.awt.event.KeyEvent
+import java.awt.event.KeyListener
+import javax.swing.*
+import kotlin.math.max
+import kotlin.math.min
 
 fun launchGui() {
     SwingUtilities.invokeLater {
-
-        //Display the window.
-        FRAME.pack()
-        FRAME.isVisible = true
+        UI.launch()
     }
 }
 
-fun draw(map: Map) {
-    STATE = map
-    FRAME.repaint()
+fun draw(newMap: Map) {
+    UI.modifyState {
+        map = newMap
+    }
 }
 
 inline class UiCell(private val value: Byte) {
@@ -43,6 +43,49 @@ inline class Pill(private val value: Byte) {
     }
 }
 
+class ViewState(
+    var map: Map?,
+    var dx: Int,
+    var dy: Int
+)
+
+private class Ui {
+    private val viewState: ViewState = ViewState(null, 0, 0)
+
+    fun modifyState(f: ViewState.() -> Unit) {
+        f(viewState)
+        frame.repaint()
+    }
+
+    val frame = JFrame("HelloWorldSwing").apply {
+        setSize(800, 600)
+        defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        contentPane.add(Canvas(viewState) { this.size })
+        addKeyListener(object : KeyListener {
+            override fun keyTyped(e: KeyEvent?) {}
+
+            override fun keyPressed(e: KeyEvent) {
+                modifyState {
+                    when (e.keyCode) {
+                        KeyEvent.VK_LEFT -> dx -= 10
+                        KeyEvent.VK_RIGHT -> dx += 10
+                        KeyEvent.VK_UP -> dy -= 10
+                        KeyEvent.VK_DOWN -> dy += 10
+                    }
+
+                }
+            }
+
+            override fun keyReleased(e: KeyEvent?) {
+            }
+        })
+    }
+
+    fun launch() {
+        frame.pack()
+        frame.isVisible = true
+    }
+}
 
 class Map(
     val dim: Point,
@@ -57,34 +100,29 @@ class Map(
 private val Map.width: Int get() = dim.x
 private val Map.height: Int get() = dim.y
 
+private val UI = Ui()
 
-private val FRAME = JFrame("HelloWorldSwing").apply {
-    setSize(800, 600)
-    defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-    contentPane.add(Canvas())
-}
-
-private var STATE: Map? = null
-
-private class Canvas : JPanel() {
+private class Canvas(val viewState: ViewState, val frameSize: () -> Dimension) : JPanel() {
     val cellSize: Int
         get() {
-            return 5
-//            val map = STATE ?: return 80
-//            if (map.width < 20 && map.height < 20) return 80
-//            if (map.width < 80 && map.height < 80) return 40
-//            return 20
+            val map = viewState.map ?: return 80
+            val size = min(
+                frameSize().width / map.width - 1,
+                frameSize().height / map.height - 1
+            )
+            return min(max(size, 5), 80)
         }
 
     private val pad = 1
 
     override fun getPreferredSize(): Dimension {
-        val map = STATE ?: return Dimension(800, 600)
+        val map = viewState.map ?: return Dimension(800, 600)
         return Dimension(cellSize * map.width, cellSize * map.height)
     }
 
     override fun paintComponent(g: Graphics) {
-        val map = STATE ?: return
+        g.translate(viewState.dx, viewState.dy)
+        val map = viewState.map ?: return
         for (x in 0 until map.width) {
             for (y in 0 until map.height) {
                 g.color = when (map[x, y]) {
@@ -110,7 +148,7 @@ private class Canvas : JPanel() {
             val color = when (pill) {
                 Pill.ROBOT -> Color.RED
                 Pill.BOOST_B -> Color.YELLOW
-                Pill.BOOST_F -> Color(210,105,30)
+                Pill.BOOST_F -> Color(210, 105, 30)
                 Pill.BOOST_L -> Color.GREEN
                 Pill.BOOST_X -> Color.BLUE
                 Pill.BOOST_T -> Color.MAGENTA
