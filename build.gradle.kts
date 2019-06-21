@@ -23,7 +23,7 @@ tasks {
     }
 }
 application {
-    mainClassName = "io.github.lambdallama.UiKt"
+    mainClassName = "io.github.lambdallama.MainKt"
 }
 val compileKotlin: KotlinCompile by tasks
 compileKotlin.kotlinOptions {

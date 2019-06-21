@@ -7,12 +7,11 @@ val DIR_NAMES = "AWDS"
 class Naive(var state: State) {
     private lateinit var board: ByteMatrix
     private lateinit var path: String
-    
+
     fun go(u: Point) {
         board[u] = Cell.WRAPPED
         for (i in 0..3) {
             val v = Point(u.x + DX[i], u.y + DY[i])
-            println(v)
             if (board.contains(v) && board[v] == Cell.FREE) {
                 path += DIR_NAMES[i]
                 go(v)

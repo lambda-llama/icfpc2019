@@ -3,10 +3,13 @@ package io.github.lambdallama
 import io.github.lambdallama.ui.*
 import io.github.lambdallama.ui.Map
 import java.io.File
+import java.lang.IllegalStateException
 
 fun main(args: Array<String>) {
-    val task = Task.parse(File("part-1-initial/prob-002.desc").readText())
-    val state = task.toState()
+    // ./gradlew run --args=path/to/prob-XXX.desc
+    val path = args.firstOrNull() ?: throw IllegalStateException(
+        "path/to/prob-XXX.desc")
+    val state = Task.parse(File(path).readText()).toState()
 
     launchGui()
     val pills: MutableList<Pair<Point, Pill>> = mutableListOf()
