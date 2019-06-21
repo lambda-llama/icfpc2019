@@ -62,19 +62,16 @@ fun setMap(map: Map) {
     UI.INSTANCE.map.set(map)
 }
 
-
-typealias State = Byte
-
-const val EMPTY: State = 0
-const val WALL: State = 1
-const val WRAPPED: State = 2
+const val EMPTY: Byte = 0
+const val WALL: Byte = 1
+const val WRAPPED: Byte = 2
 
 class Map(
     val width: Int,
     val height: Int,
-    init: (Int, Int) -> State = { _, _ -> EMPTY }
+    init: (Int, Int) -> Byte = { _, _ -> EMPTY }
 ) {
-    private val cells: Array<State> = Array(width * height) { i -> init(i / width, i % width) }
-    operator fun get(row: Int, col: Int): State =
+    private val cells: Array<Byte> = Array(width * height) { i -> init(i / width, i % width) }
+    operator fun get(row: Int, col: Int): Byte =
         cells[row + col * width]
 }

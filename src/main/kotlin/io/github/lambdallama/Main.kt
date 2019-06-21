@@ -1,6 +1,8 @@
 package io.github.lambdallama
 
 import java.io.File
+import kotlin.math.max
+import kotlin.math.min
 
 data class Point(val x: Int, val y: Int) {
     companion object {
@@ -13,6 +15,22 @@ data class Point(val x: Int, val y: Int) {
 }
 
 data class Poly(val contour: List<Point>) {
+    /** Bottom-left and top-right corners of the bounding box. */
+    val bbox: Pair<Point, Point> get() {
+        var minX = Int.MAX_VALUE
+        var minY = Int.MAX_VALUE
+        var maxX = 0
+        var maxY = 0
+        for ((x, y) in contour) {
+            minX = min(minX, x)
+            minY = min(minY, y)
+            maxX = max(maxX, x)
+            maxY = max(maxY, y)
+        }
+
+        return Point(minX, minY) to Point(maxX, maxY)
+    }
+
     companion object {
         fun parse(s: String): Poly {
             val contour = mutableListOf<Point>()
@@ -31,16 +49,38 @@ data class Poly(val contour: List<Point>) {
 }
 
 data class Booster(
-    val type: Char,
-    val loc: Point) {
+    val type: Type,
+    val loc: Point
+) {
+
     companion object {
-        fun parse(s: String): Booster {
-            val type = s.first().also { ch ->
-                require(ch in "BFLX") { "invalid booster type: $ch" }
-            }
-            return Booster(type, Point.parse(s.slice(1 until s.length)))
+        enum class Type {
+            B, F, L, X
         }
+
+        fun parse(s: String): Booster = Booster(
+            type = Type.valueOf(s.take(1)),
+            loc = Point.parse(s.drop(1)))
     }
+}
+
+class ByteMatrix(
+    numRows: Int,
+    private val numCols: Int
+) {
+    private val buf: ByteArray = ByteArray(numRows * numCols)
+
+    operator fun get(i: Int, j: Int) = buf[i * numCols + j]
+
+    operator fun set(i: Int, j: Int, value: Byte) {
+        buf[i * numCols + j] = value
+    }
+}
+
+data class State(
+    val buf: ByteMatrix
+) {
+
 }
 
 data class Task(
@@ -49,6 +89,15 @@ data class Task(
     val obstacles: List<Poly>,
     val boosters: List<Booster>
 ) {
+    fun toState(): State {
+        val (bottomLeft, topRight) = map.bbox
+        val (minX, minY) = bottomLeft
+        val (maxX, maxY) = topRight
+        val numRows = maxY - minY
+        val numCols = maxX - minX
+        return State(ByteMatrix(numRows, numCols))
+    }
+
     companion object {
         fun parse(s: String): Task {
             val (rawMap, rawInitial, rawObstacles, rawBoosters) = s.split('#')
