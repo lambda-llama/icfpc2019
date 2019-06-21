@@ -74,8 +74,7 @@ data class Poly(val contour: List<Point>) {
     }
 }
 
-data class Vertical(val x: Int, val ay: Int, val by: Int) {
-}
+data class Vertical(val x: Int, val ay: Int, val by: Int)
 
 fun List<Poly>.project(buf: ByteMatrix, value: Cell) {
     if (isEmpty()) {
