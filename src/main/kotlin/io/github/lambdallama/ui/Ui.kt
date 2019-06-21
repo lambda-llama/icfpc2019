@@ -27,6 +27,7 @@ private const val frameLenMs = 300
 
 fun visualize(initialState: State, step: Boolean = false): ActionSink {
     val state = initialState.clone()
+    state.wrap()
     var lastFrame = now()
     draw(state.toMap())
     return { action ->

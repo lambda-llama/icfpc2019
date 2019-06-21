@@ -49,7 +49,7 @@ data class State(
                     ),
                     orientation = Orientation.RIGHT
                 )
-            ).apply { wrap() }
+            )
         }
     }
 
@@ -62,7 +62,7 @@ data class State(
         }
     }
 
-    private fun wrap() {
+    fun wrap() {
         for (point in robot.parts) {
             if (grid.contains(point) && grid[point] == Cell.FREE) {
                 grid[point] = Cell.WRAPPED
