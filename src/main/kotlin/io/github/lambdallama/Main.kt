@@ -31,8 +31,16 @@ inline class Cell(val byte: Byte) {
     }
 }
 
-data class Point(val x: Int, val y: Int) {
+inline class Point(val xy: Long) {
+    inline val x: Int get() = xy.toInt()
+    inline val y: Int get() = (xy shr 32).toInt()
+
+    operator fun component1(): Int = x
+    operator fun component2(): Int = y
+
     companion object {
+        operator fun invoke(x: Int, y: Int) = Point(x.toLong() or (y.toLong() shl Integer.SIZE))
+
         fun parse(s: String): Point {
             check(s.first() == '(' && s.last() == ')')
             val (x, y) = s.slice(1 until s.length - 1).split(',', limit = 2)
