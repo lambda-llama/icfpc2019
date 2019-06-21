@@ -82,6 +82,14 @@ class ByteMatrix(
 ) {
     private val buf: ByteArray = ByteArray(numRows * numCols)
 
+    operator fun set(p: Poly, value: Byte) {
+
+    }
+
+    operator fun get(p: Point) = get(p.y, p.x)
+
+    operator fun set(p: Point, value: Byte) = set(p.y, p.x, value)
+
     operator fun get(i: Int, j: Int) = buf[i * numCols + j]
 
     operator fun set(i: Int, j: Int, value: Byte) {
@@ -89,11 +97,15 @@ class ByteMatrix(
     }
 }
 
-data class State(
-    val buf: ByteMatrix
-) {
+/** Has the cell been wrapped by Wrappy? */
+inline val Byte.isWrapped: Boolean get() = this == 'W'.toByte()
+/** Is it out of bounds of the map? */
+inline val Byte.isVoid: Boolean get() = this == 'V'.toByte()
 
-}
+data class State(
+    val grid: ByteMatrix,
+    val wrappy: List<Point>
+)
 
 data class Task(
     val map: Poly,
@@ -107,7 +119,23 @@ data class Task(
         val (maxX, maxY) = topRight
         val numRows = maxY - minY
         val numCols = maxX - minX
-        return State(ByteMatrix(numRows, numCols))
+        val grid = ByteMatrix(numRows, numCols)
+
+        for (obstacle in obstacles) {
+
+        }
+
+        for (booster in boosters) {
+            grid[booster.loc] = booster.type.toByte()
+        }
+
+        val (initialX, initialY) = initialLoc
+        // TODO(superbobry): filter invalid points.
+        val wrappy = listOf(
+            Point(initialX + 1, initialY),
+            Point(initialX + 1, initialY + 1),
+            Point(initialX + 1, initialY - 1))
+        return State(grid, wrappy)
     }
 
     companion object {
