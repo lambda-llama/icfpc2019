@@ -46,10 +46,10 @@ inline class Pill(private val value: Byte) {
 class Map(
     val width: Int,
     val height: Int,
-    init: (Int, Int) -> Cell = { _, _ -> Cell.FREE },
+    init: (Point) -> Cell = { _ -> Cell.FREE },
     val pills: List<Pair<Point, Pill>>
 ) {
-    private val cells: Array<Cell> = Array(width * height) { i -> init(i / width, i % width) }
+    private val cells: Array<Cell> = Array(width * height) { i -> init(Point(i / width, i % width)) }
     operator fun get(x: Int, y: Int): Cell =
         cells[x + y * width]
 }
@@ -63,10 +63,14 @@ private val FRAME = JFrame("HelloWorldSwing").apply {
 private var STATE: Map? = null
 
 private class Canvas : JPanel() {
-    val cellSize = 80
-    private val pad = 4
+    val cellSize = 20
+    private val pad = 1
 
-    override fun getPreferredSize(): Dimension = Dimension(800, 600)
+    override fun getPreferredSize(): Dimension {
+        val map = STATE ?: return Dimension(800, 600)
+        return Dimension(cellSize * map.width, cellSize * map.height)
+    }
+
     override fun paintComponent(g: Graphics) {
         val map = STATE ?: return
         for (x in 0 until map.width) {
@@ -100,12 +104,21 @@ private class Canvas : JPanel() {
                 else -> error("bad pill")
             }
             val (px, py) = map.topLeftCorner(x, y)
-            g.fillOval(
-                px + cellSize / 4,
-                py + cellSize / 4,
-                cellSize / 2,
-                cellSize / 2
-            )
+            if (pill == Pill.ROBOT) {
+                g.fillRect(
+                    px + cellSize / 4,
+                    py + cellSize / 4,
+                    cellSize / 2,
+                    cellSize / 2
+                )
+            } else {
+                g.fillOval(
+                    px + cellSize / 4,
+                    py + cellSize / 4,
+                    cellSize / 2,
+                    cellSize / 2
+                )
+            }
         }
     }
 

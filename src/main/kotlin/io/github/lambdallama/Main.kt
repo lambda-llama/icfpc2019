@@ -103,8 +103,8 @@ data class Booster(
 }
 
 class ByteMatrix(
-    private val numRows: Int,
-    private val numCols: Int,
+    val numRows: Int,
+    val numCols: Int,
     value: Byte
 ) {
     private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
@@ -247,16 +247,39 @@ class Naive(var state: State) {
 }
 
 fun main(args: Array<String>) {
-    val task = Task.parse(File("part-1-initial/prob-001.desc").readText())
+    val task = Task.parse(File("part-1-initial/prob-002.desc").readText())
     val state = task.toState()
 //    val naive = Naive(state)
 //    // TODO(alexeyc): change to the real start point
 //    println(naive.go(Point(0, 0)))
 
     launchGui()
+    val pills: MutableList<Pair<Point, Pill>> = mutableListOf()
+    draw(Map(state.grid.numRows, state.grid.numCols,
+        { p ->
+            val c = state.grid[p]
+            if (state.wrappy.contains(p)) {
+                pills += p to Pill.ROBOT
+            }
+            when {
+                c.isObstacle -> Cell.WALL
+                c.isFree -> Cell.FREE
+                c.isWrapped -> Cell.WRAPPED
+                c.isVoid -> Cell.VOID
+                else -> {
+                    when {
+                        c.isExtension -> pills += p to Pill.BOOST_B
+                        c.isDrill -> pills += p to Pill.BOOST_L
+                        c.isFastWheels -> pills += p to Pill.BOOST_F
+                        c.isMysteriousPoint -> pills += p to Pill.BOOST_X
+                    }
+                    Cell.FREE
+                }
+            }
+
+        }, pills))
     for (i in 0 until 100) {
         Thread.sleep(300)
-        draw(Map(5, 5, { _, _ -> Cell.FREE }, listOf(Point(0, 0) to Pill.ROBOT)))
     }
 
     println(state.grid)
