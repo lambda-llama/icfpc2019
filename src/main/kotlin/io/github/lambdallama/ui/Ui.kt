@@ -44,7 +44,7 @@ fun visualize(initialState: State): ActionSink {
 private fun now(): Long  = System.currentTimeMillis()
 
 private fun Point.move(move: Move): Point {
-    return Point(x + DX[move.direction], y + DY[move.direction])
+    return Point(x + move.dx, y + move.dy)
 }
 
 private fun State.toMap(): Map {
