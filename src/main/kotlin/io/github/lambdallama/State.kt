@@ -99,6 +99,11 @@ data class Booster(
 }
 
 inline class Cell(val byte: Byte) {
+    val isWrapable: Boolean get() = when (this) {
+        OBSTACLE, VOID, WRAPPED -> false
+        else -> true
+    }
+
     companion object {
         val OBSTACLE = Cell('O'.toByte())
         val WRAPPED = Cell('W'.toByte())

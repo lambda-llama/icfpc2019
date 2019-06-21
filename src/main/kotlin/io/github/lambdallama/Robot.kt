@@ -6,7 +6,7 @@ data class Robot(var position: Point,
 
     fun wrap(grid: ByteMatrix) {
         parts.forEach { p ->
-            if (p in grid && grid[p] == Cell.FREE) {
+            if (p in grid && grid[p].isWrapable) {
                 grid[p] = Cell.WRAPPED
             }
         }

@@ -13,7 +13,7 @@ object Naive : Strategy {
         grid[u] = Cell.WRAPPED
         for (move in MOVES) {
             val v = move(u)
-            if (v in grid && grid[v] == Cell.FREE) {
+            if (v in grid && grid[v].isWrapable) {
                 sink(move)
                 go(grid, v, sink)
                 sink(move.flipped)
@@ -36,7 +36,7 @@ object NaiveIterative : Strategy {
             val u = q.first
             grid[u] = Cell.WRAPPED
             val move = MOVES.firstOrNull { move ->
-                move(u).let { it in grid && grid[it] == Cell.FREE }
+                move(u).let { it in grid && grid[it].isWrapable }
             }
 
             if (move == null) {
@@ -59,9 +59,11 @@ interface Greedy : Strategy {
         val grid = state.grid
         state.robot.wrap(grid)
         while (true) {
-            check(grid[state.robot.position] == Cell.WRAPPED)
+            check(grid[state.robot.position] == Cell.WRAPPED) {
+                grid[state.robot.position]
+            }
             val path = closestFree(grid, state.robot.position)
-            if (grid[path.last()] != Cell.FREE) {
+            if (!grid[path.last()].isWrapable) {
                 break
             }
 
@@ -88,7 +90,7 @@ interface Greedy : Strategy {
         var u: Point? = initial
         while (q.isNotEmpty()) {
             u = q.removeFirst()
-            if (grid[u] == Cell.FREE) {
+            if (grid[u].isWrapable) {
                 break
             }
 
