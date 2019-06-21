@@ -54,7 +54,7 @@ object NaiveIterative : Strategy {
     }
 }
 
-abstract class Greedy : Strategy {
+interface Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
         state.robot.wrap(grid)
@@ -66,15 +66,20 @@ abstract class Greedy : Strategy {
             }
 
             check(path.first() == state.robot.position)
-            for (v in path.drop(1)) {
-                sink(MOVES.first { it(state.robot.position) == v })
-                state.robot.position = v
-                state.robot.wrap(grid)
-            }
+            follow(state, path, sink)
         }
     }
 
-    abstract fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move>
+    fun follow(state: State, path: List<Point>, sink: ActionSink) {
+        val grid = state.grid
+        for (v in path.drop(1)) {
+            sink(MOVES.first { it(state.robot.position) == v })
+            state.robot.position = v
+            state.robot.wrap(grid)
+        }
+    }
+
+    fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move>
 
     private fun closestFree(grid: ByteMatrix, initial: Point): List<Point> {
         val backtrack = mutableMapOf<Point, Point?>(initial to null)
@@ -107,14 +112,36 @@ abstract class Greedy : Strategy {
     }
 }
 
-object GreedyUnordered: Greedy() {
+object GreedyUnordered: Greedy {
     override fun candidates(u: Point, backtrack: Map<Point, Point?>) = MOVES
 }
 
-object GreedySameMoveFirst: Greedy() {
+object GreedySameMoveFirst: Greedy {
     override fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move> {
         val origin = backtrack[u] ?: return MOVES
         val move = MOVES.first { it(origin) == u }
         return arrayOf(move) + MOVES
+    }
+}
+
+object GreedyUnorderedTurnover: Greedy {
+    override fun candidates(u: Point, backtrack: Map<Point, Point?>) = MOVES
+
+    override fun follow(state: State, path: List<Point>, sink: ActionSink) {
+        val grid = state.grid
+        val moves = Array(path.size - 1) { i ->
+            MOVES.first { it(path[i]) == path[i + 1] }
+        }
+
+        for (i in 0 until moves.size) {
+            // If the direction changed and the next two moves are the same, turn.
+            if (i < moves.size - 1 && moves[i] == moves[i + 1]) {
+            }
+        }
+
+        for (v in path.drop(1)) {
+            state.robot.position = v
+            state.robot.wrap(grid)
+        }
     }
 }
