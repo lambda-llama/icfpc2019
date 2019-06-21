@@ -1,11 +1,9 @@
 package io.github.lambdallama
 
 import com.google.common.collect.ArrayListMultimap
-import com.google.common.collect.Multimaps
 import io.github.lambdallama.ui.*
 import io.github.lambdallama.ui.Map
 import java.io.File
-import java.lang.StringBuilder
 import kotlin.math.max
 import kotlin.math.min
 
@@ -116,9 +114,10 @@ fun List<Poly>.project(buf: ByteMatrix, value: Cell) {
     }
     check(!verticals.isEmpty)
 
-    for (y in 0 until buf.numRows) {
+    val (mx, my) = buf.dim
+    for (y in 0 until my) {
         var count = 0
-        for (x in 0 until buf.numCols) {
+        for (x in 0 until mx) {
             if (verticals.containsKey(x)) {
                 for (v in verticals[x]) {
                     // ay <= y + 1/2 <= by => 2 ay <= 2 y + 1 <= 2 by
@@ -154,42 +153,6 @@ data class Booster(
         fun parse(s: String): Booster = Booster(
             type = BoosterType.valueOf(s.take(1)),
             loc = Point.parse(s.drop(1)))
-    }
-}
-
-class ByteMatrix(
-    val numRows: Int,
-    val numCols: Int,
-    value: Cell
-) {
-    val dim: Point get() = Point(numCols, numRows)
-    private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value.byte) }
-
-    operator fun get(p: Point) = get(p.y, p.x)
-
-    operator fun set(p: Point, value: Cell) = set(p.y, p.x, value)
-
-    fun contains(p: Point): Boolean {
-        return p.x >= 0 && p.y >= 0 && p.x < numRows && p.y < numCols
-    }
-
-    private operator fun get(i: Int, j: Int) = Cell(buf[i * numCols + j])
-
-    private operator fun set(i: Int, j: Int, value: Cell) {
-        buf[i * numCols + j] = value.byte
-    }
-
-    override fun toString(): String {
-        val sb = StringBuilder()
-        for (y in 0 until numRows) {
-            for (x in 0 until numCols) {
-                sb.append(get(y, x).byte.toChar())
-            }
-
-            sb.append('\n')
-        }
-
-        return sb.toString()
     }
 }
 
