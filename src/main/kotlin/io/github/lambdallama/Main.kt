@@ -1,5 +1,7 @@
 package io.github.lambdallama
 
+import io.github.lambdallama.ui.*
+import io.github.lambdallama.ui.Map
 import java.io.File
 import java.lang.StringBuilder
 import kotlin.math.max
@@ -253,9 +255,7 @@ fun main(args: Array<String>) {
     launchGui()
     for (i in 0 until 100) {
         Thread.sleep(300)
-        draw(Map(10, 10) { _, _ ->
-            if (i % 2 == 0) WRAPPED else FREE
-        })
+        draw(Map(5, 5, { _, _ -> Cell.FREE }, listOf(Point(0, 0) to Pill.ROBOT)))
     }
 
     val task = Task.parse(File("part-1-initial/prob-005.desc").readText())
