@@ -1,23 +1,11 @@
 package io.github.lambdallama
 
-import com.google.common.collect.ArrayListMultimap
 import io.github.lambdallama.ui.*
 import io.github.lambdallama.ui.Map
 import java.io.File
-import kotlin.math.max
-import kotlin.math.min
 
 // TODO(superbobry): make these inline classes.
 inline class Cell(val byte: Byte) {
-    /** It this cell inside an obstacle? */
-    inline val isObstacle: Boolean get() = this == OBSTACLE
-    /** Has the cell been wrapped by Wrappy? */
-    inline val isWrapped: Boolean get() = this == WRAPPED
-    /** Is it out of bounds of the map? */
-    inline val isVoid: Boolean get() = this == VOID
-    /** Is it within bounds of the map and could be wrapped? */
-    inline val isFree: Boolean get() = this == FREE
-
     companion object {
         val OBSTACLE = Cell('O'.toByte())
         val WRAPPED = Cell('W'.toByte())
@@ -28,17 +16,19 @@ inline class Cell(val byte: Byte) {
         val B_FAST_WHEELS: Cell get() = Cell('F'.toByte())
         val B_DRILL: Cell get() = Cell('L'.toByte())
         val B_MYSTERIOUS_POINT: Cell get() = Cell('X'.toByte())
+        val B_TELEPORT: Cell get() = Cell('T'.toByte())
     }
 }
 
 enum class BoosterType {
-    B, F, L, X;
+    B, F, L, X, T;
 
     fun toCell(): Cell = when (this) {
         B -> Cell.B_EXTENSION
         F -> Cell.B_FAST_WHEELS
         L -> Cell.B_DRILL
         X -> Cell.B_MYSTERIOUS_POINT
+        T -> Cell.B_TELEPORT
     }
 }
 

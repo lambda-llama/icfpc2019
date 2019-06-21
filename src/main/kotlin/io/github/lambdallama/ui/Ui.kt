@@ -39,6 +39,7 @@ inline class Pill(private val value: Byte) {
         val BOOST_F = Pill(2)
         val BOOST_L = Pill(3)
         val BOOST_X = Pill(4)
+        val BOOST_T = Pill(5)
     }
 }
 
@@ -111,6 +112,7 @@ private class Canvas : JPanel() {
                 Pill.BOOST_F -> Color(210,105,30)
                 Pill.BOOST_L -> Color.GREEN
                 Pill.BOOST_X -> Color.BLUE
+                Pill.BOOST_T -> Color.MAGENTA
                 else -> error("bad pill")
             }
             g.color = color
