@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("org.jetbrains.kotlin.jvm").version("1.3.21")
+    id("com.github.johnrengelman.shadow").version("4.0.2")
     application
 }
 
@@ -22,9 +23,11 @@ tasks {
         }
     }
 }
+
 application {
     mainClassName = "io.github.lambdallama.MainKt"
 }
+
 val compileKotlin: KotlinCompile by tasks
 compileKotlin.kotlinOptions {
     freeCompilerArgs = listOf("-XXLanguage:+InlineClasses")
