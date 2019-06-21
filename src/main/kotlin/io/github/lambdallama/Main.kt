@@ -164,7 +164,35 @@ data class Task(
     }
 }
 
+val DX = arrayOf(-1, 0, 1, 0)
+val DY = arrayOf(0, -1, 0, 1)
+val DIR_NAMES = "AWDS"
+
+class Naive(var state: State) {
+    private lateinit var board: ByteMatrix
+    private lateinit var path: String
+    fun go(u: Point) {
+        board[u] = WRAPPED
+        for (i in 0..3) {
+            val v = Point(u.x + DX[i], u.y + DY[i])
+            if (board[v] == VOID) {
+                path += DIR_NAMES[i]
+                go(v)
+                path += DIR_NAMES[i xor 2]
+            }
+        }
+    }
+    fun traverse(start: Point): String {
+        board = state.grid
+        path = ""
+        go(start)
+        return path
+    }
+}
 
 fun main(args: Array<String>) {
-    println(Task.parse(File("part-1-initial/prob-001.desc").readText()))
+    var task = Task.parse(File("part-1-initial/prob-001.desc").readText())
+    println(task)
+    var naive = Naive(task.toState())
+    println(naive.go(Point(0, 0)))
 }
