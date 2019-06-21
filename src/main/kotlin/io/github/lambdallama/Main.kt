@@ -103,10 +103,11 @@ data class Booster(
 }
 
 class ByteMatrix(
-    val numRows: Int,
-    val numCols: Int,
+    private val numRows: Int,
+    private val numCols: Int,
     value: Byte
 ) {
+    val dim: Point get() = Point(numRows, numCols)
     private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
 
     operator fun set(poly: Poly, value: Byte) {
@@ -247,7 +248,7 @@ class Naive(var state: State) {
 }
 
 fun main(args: Array<String>) {
-    val task = Task.parse(File("part-1-initial/prob-002.desc").readText())
+    val task = Task.parse(File("part-1-initial/prob-001.desc").readText())
     val state = task.toState()
 //    val naive = Naive(state)
 //    // TODO(alexeyc): change to the real start point
@@ -255,7 +256,7 @@ fun main(args: Array<String>) {
 
     launchGui()
     val pills: MutableList<Pair<Point, Pill>> = mutableListOf()
-    draw(Map(state.grid.numRows, state.grid.numCols,
+    draw(Map(state.grid.dim,
         { p ->
             val c = state.grid[p]
             if (state.wrappy.contains(p)) {

@@ -44,15 +44,18 @@ inline class Pill(private val value: Byte) {
 
 
 class Map(
-    val width: Int,
-    val height: Int,
+    val dim: Point,
     init: (Point) -> Cell = { _ -> Cell.FREE },
     val pills: List<Pair<Point, Pill>>
 ) {
-    private val cells: Array<Cell> = Array(width * height) { i -> init(Point(i / width, i % width)) }
+    private val cells: Array<Cell> = Array(height * width) { i -> init(Point(i / width, i % width)) }
     operator fun get(x: Int, y: Int): Cell =
         cells[x + y * width]
 }
+
+private val Map.width: Int get() = dim.x
+private val Map.height: Int get() = dim.y
+
 
 private val FRAME = JFrame("HelloWorldSwing").apply {
     setSize(800, 600)
@@ -63,10 +66,11 @@ private val FRAME = JFrame("HelloWorldSwing").apply {
 private var STATE: Map? = null
 
 private class Canvas : JPanel() {
-    val cellSize: Int get() {
-        val map = STATE ?: return 80
-        return if (map.width < 100 && map.height < 100) 80 else 20
-    }
+    val cellSize: Int
+        get() {
+            val map = STATE ?: return 80
+            return if (map.width < 100 && map.height < 100) 80 else 20
+        }
 
     private val pad = 1
 
