@@ -3,10 +3,12 @@ package io.github.lambdallama
 import kotlin.math.*
 
 data class State(
-    val grid: ByteMatrix,
-    val robot: Robot
+    var grid: ByteMatrix,
+    var robot: Robot
 ) {
     val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
+
+    fun clone() = State(grid.clone(), robot)
 
     companion object {
         fun parse(s: String): State {
@@ -37,20 +39,41 @@ data class State(
             }
 
             return State(
-                    grid,
-                    robot = Robot(
-                            position = initialLoc,
-                            tentacles = listOf(
-                                    Point(1, 0),
-                                    Point(1, 1),
-                                    Point(1, -1)
-                            ),
-                            orientation = Orientation.RIGHT
-                    )
-            )
+                grid,
+                robot = Robot(
+                    position = initialLoc,
+                    tentacles = listOf(
+                        Point(1, 0),
+                        Point(1, 1),
+                        Point(1, -1)
+                    ),
+                    orientation = Orientation.RIGHT
+                )
+            ).apply { wrap() }
         }
     }
+
+    fun apply(action: Action) {
+        when (action) {
+            is Move -> {
+                robot = robot.copy(position = robot.position.apply(action))
+                wrap()
+            }
+        }
+    }
+
+    private fun wrap() {
+        for (point in robot.parts) {
+            if (grid.contains(point) && grid[point] == Cell.FREE) {
+                grid[point] = Cell.WRAPPED
+            }
+        }
+
+    }
 }
+
+fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
+
 
 enum class BoosterType {
     B, F, L, X, R;

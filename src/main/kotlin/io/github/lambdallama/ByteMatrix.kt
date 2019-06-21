@@ -15,6 +15,8 @@ class ByteMatrix private constructor(
 
     operator fun set(p: Point, value: Cell) = set(p.y, p.x, value)
 
+    fun clone() = ByteMatrix(numRows, numCols, buf.clone())
+
     operator fun contains(p: Point): Boolean =
         p.x >= 0 && p.y >= 0 && p.x < dim.x && p.y < dim.y
 

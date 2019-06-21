@@ -26,11 +26,10 @@ fun draw(newMap: Map) {
 private const val frameLenMs = 300
 
 fun visualize(initialState: State, step: Boolean = false): ActionSink {
-    var state = initialState
+    val state = initialState.clone()
     var lastFrame = now()
     draw(state.toMap())
     return { action ->
-        println("action = ${action}")
         if (step) {
             UI.stepSemaphore.acquire()
         } else {
@@ -40,18 +39,11 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
             }
         }
         lastFrame = now()
-
-        if (action is Move) {
-            state = state.copy(robot = state.robot.copy(position = state.robot.position.move(action)))
-        }
-        draw(initialState.toMap())
+        state.apply(action)
+        draw(state.toMap())
     }
 }
 private fun now(): Long  = System.currentTimeMillis()
-
-private fun Point.move(move: Move): Point {
-    return Point(x + move.dx, y + move.dy)
-}
 
 private fun State.toMap(): Map {
     val pills = mutableListOf<Pair<Point, Pill>>()
@@ -110,7 +102,7 @@ class ViewState(
 )
 
 private class Ui {
-    var stepSemaphore: Semaphore = Semaphore(1)
+    var stepSemaphore: Semaphore = Semaphore(1).apply { acquire() }
     private val viewState: ViewState = ViewState(null, 0, 0)
 
     fun modifyState(f: ViewState.() -> Unit) {
