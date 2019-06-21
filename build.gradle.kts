@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    compile("com.google.guava:guava:28.0-jre")
     testCompile("org.jetbrains.kotlin:kotlin-test-junit")
 }
 

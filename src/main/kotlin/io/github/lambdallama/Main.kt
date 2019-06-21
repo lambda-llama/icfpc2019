@@ -1,5 +1,7 @@
 package io.github.lambdallama
 
+import com.google.common.collect.ArrayListMultimap
+import com.google.common.collect.Multimaps
 import io.github.lambdallama.ui.*
 import io.github.lambdallama.ui.Map
 import java.io.File
@@ -75,6 +77,47 @@ data class Poly(val contour: List<Point>) {
     }
 }
 
+data class Vertical(val x: Int, val ay: Int, val by: Int) {
+    // ay <= y + 1/2y <= by => 2 ay <= 3 y <= 2 by
+    operator fun contains(y: Int) = 3*y in 2*ay..2*by
+}
+
+fun List<Poly>.project(buf: ByteMatrix, value: Byte) {
+    if (isEmpty()) {
+        return
+    }
+
+    val verticals = ArrayListMultimap.create<Int, Vertical>()
+    for (poly in this) {
+        val contour = poly.contour
+        for (i in 0 until contour.size) {
+            val a = contour[i]
+            val b = contour[(i + 1) % contour.size]
+            if (a.x == b.x) {
+                verticals.put(a.x, Vertical(a.x, min(a.y, b.y), max(a.y, b.y)))
+            }
+        }
+    }
+    check(!verticals.isEmpty)
+
+    for (y in 0 until buf.numRows) {
+        var count = 0
+        for (x in 0 until buf.numCols) {
+            if (verticals.containsKey(x)) {
+                for (v in verticals[x]) {
+                    if (y in v) {
+                        count++
+                    }
+                }
+            }
+
+            if (count % 2 > 0) {
+                buf[Point(x, y)] = value
+            }
+        }
+    }
+}
+
 enum class BoosterType {
     B, F, L, X;
 
@@ -109,21 +152,6 @@ class ByteMatrix(
 ) {
     val dim: Point get() = Point(numCols, numRows)
     private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
-
-    operator fun set(poly: Poly, value: Byte) {
-        val (bottomLeft, topRight) = poly.bbox
-        val (minX, minY) = bottomLeft
-        val (maxX, maxY) = topRight
-
-        for (x in minX..maxX) {
-            for (y in minY..maxY) {
-                val p = Point(x, y)
-                if (p in poly) {
-                    set(p, value)
-                }
-            }
-        }
-    }
 
     operator fun get(p: Point) = get(p.y, p.x)
 
@@ -179,13 +207,11 @@ data class Task(
         val (maxX, maxY) = topRight
         // TODO(superbobry): apply shift if minX/minY are non-zero.
         check(minX == 0 && minY == 0)
-        val numRows = (maxY + 1) - minY
-        val numCols = (maxX + 1) - minX
+        val numRows = maxY - minY
+        val numCols = maxX - minX
         val grid = ByteMatrix(numRows, numCols, VOID)
-        grid[map] = FREE
-        for (obstacle in obstacles) {
-            grid[obstacle] = OBSTACLE
-        }
+        listOf(map).project(grid, FREE)
+        obstacles.project(grid, OBSTACLE)
         for (booster in boosters) {
             grid[booster.loc] = booster.type.toByte()
         }
