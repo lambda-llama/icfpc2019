@@ -6,6 +6,8 @@ interface Move: Action {
     val dx: Int
     val dy: Int
     val flipped: Move
+
+    operator fun invoke(p: Point) = Point(p.x + dx, p.y + dy)
 }
 
 object MoveUp: Move {
