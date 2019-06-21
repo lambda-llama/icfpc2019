@@ -24,4 +24,27 @@ class OrientationTest {
     fun testDirections() {
         assertEquals(Point(1, 1).rotate(Orientation.UP), actual = Point(-1, 1))
     }
+
+    @Test
+    fun testRotate() {
+        var orientation = Orientation.RIGHT
+
+        orientation = orientation.rotate(Rotation.COUNTERCLOCKWISE)
+        assertEquals(Orientation.UP, orientation)
+        orientation = orientation.rotate(Rotation.COUNTERCLOCKWISE)
+        assertEquals(Orientation.LEFT, orientation)
+        orientation = orientation.rotate(Rotation.COUNTERCLOCKWISE)
+        assertEquals(Orientation.DOWN, orientation)
+        orientation = orientation.rotate(Rotation.COUNTERCLOCKWISE)
+        assertEquals(Orientation.RIGHT, orientation)
+
+        orientation = orientation.rotate(Rotation.CLOCKWISE)
+        assertEquals(Orientation.DOWN, orientation)
+        orientation = orientation.rotate(Rotation.CLOCKWISE)
+        assertEquals(Orientation.LEFT, orientation)
+        orientation = orientation.rotate(Rotation.CLOCKWISE)
+        assertEquals(Orientation.UP, orientation)
+        orientation = orientation.rotate(Rotation.CLOCKWISE)
+        assertEquals(Orientation.RIGHT, orientation)
+    }
 }

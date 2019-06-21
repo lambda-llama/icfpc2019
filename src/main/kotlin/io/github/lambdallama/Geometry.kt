@@ -45,7 +45,18 @@ enum class Orientation(
 
             ax = Point(0, 1),
             ay = Point(-1, 0)
-    )
+    );
+
+    fun rotate(direction: Rotation): Orientation =
+            if (direction == Rotation.COUNTERCLOCKWISE)
+                Orientation.values()[(ordinal + 1) and 3]
+            else
+                Orientation.values()[(ordinal + 3) and 3]
+}
+
+enum class Rotation {
+    COUNTERCLOCKWISE,
+    CLOCKWISE
 }
 
 data class Poly(val contour: List<Point>) {
