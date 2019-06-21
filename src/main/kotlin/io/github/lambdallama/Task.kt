@@ -51,14 +51,14 @@ data class Task(
 }
 
 enum class BoosterType {
-    B, F, L, X, T;
+    B, F, L, X, R;
 
     fun toCell(): Cell = when (this) {
         B -> Cell.B_EXTENSION
         F -> Cell.B_FAST_WHEELS
         L -> Cell.B_DRILL
         X -> Cell.B_MYSTERIOUS_POINT
-        T -> Cell.B_TELEPORT
+        R -> Cell.B_TELEPORT
     }
 }
 
