@@ -48,7 +48,7 @@ class Map(
     init: (Point) -> Cell = { _ -> Cell.FREE },
     val pills: List<Pair<Point, Pill>>
 ) {
-    private val cells: Array<Cell> = Array(height * width) { i -> init(Point(i / width, i % width)) }
+    private val cells: Array<Cell> = Array(height * width) { i -> init(Point(i % width, i / width)) }
     operator fun get(x: Int, y: Int): Cell =
         cells[x + y * width]
 }

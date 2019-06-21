@@ -107,7 +107,7 @@ class ByteMatrix(
     private val numCols: Int,
     value: Byte
 ) {
-    val dim: Point get() = Point(numRows, numCols)
+    val dim: Point get() = Point(numCols, numRows)
     private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
 
     operator fun set(poly: Poly, value: Byte) {
@@ -250,9 +250,6 @@ class Naive(var state: State) {
 fun main(args: Array<String>) {
     val task = Task.parse(File("part-1-initial/prob-001.desc").readText())
     val state = task.toState()
-//    val naive = Naive(state)
-//    // TODO(alexeyc): change to the real start point
-//    println(naive.go(Point(0, 0)))
 
     launchGui()
     val pills: MutableList<Pair<Point, Pill>> = mutableListOf()
