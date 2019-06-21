@@ -78,8 +78,6 @@ data class Poly(val contour: List<Point>) {
 }
 
 data class Vertical(val x: Int, val ay: Int, val by: Int) {
-    // ay <= y + 1/2y <= by => 2 ay <= 3 y <= 2 by
-    operator fun contains(y: Int) = 3*y in 2*ay..2*by
 }
 
 fun List<Poly>.project(buf: ByteMatrix, value: Byte) {
@@ -105,7 +103,8 @@ fun List<Poly>.project(buf: ByteMatrix, value: Byte) {
         for (x in 0 until buf.numCols) {
             if (verticals.containsKey(x)) {
                 for (v in verticals[x]) {
-                    if (y in v) {
+                    // ay <= y + 1/2 <= by => 2 ay <= 2 y + 1 <= 2 by
+                    if (2 * y + 1 in 2*v.ay..2*v.by) {
                         count++
                     }
                 }
@@ -146,8 +145,8 @@ data class Booster(
 }
 
 class ByteMatrix(
-    private val numRows: Int,
-    private val numCols: Int,
+    val numRows: Int,
+    val numCols: Int,
     value: Byte
 ) {
     val dim: Point get() = Point(numCols, numRows)
@@ -274,7 +273,7 @@ class Naive(var state: State) {
 }
 
 fun main(args: Array<String>) {
-    val task = Task.parse(File("part-1-initial/prob-001.desc").readText())
+    val task = Task.parse(File("part-1-initial/prob-003.desc").readText())
     val state = task.toState()
 
     launchGui()
