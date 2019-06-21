@@ -67,3 +67,5 @@ class Teleport(private val location: Point) : Action {
 object NoOp : Action {
     override fun toString() = "Z"
 }
+
+typealias ActionSink = (Action) -> Unit

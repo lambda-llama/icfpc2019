@@ -1,6 +1,6 @@
 package io.github.lambdallama.ui
 
-import io.github.lambdallama.Point
+import io.github.lambdallama.*
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
@@ -21,6 +21,60 @@ fun draw(newMap: Map) {
         map = newMap
     }
 }
+
+private const val frameLenMs = 300
+
+fun visualize(initialState: State): ActionSink {
+    var state = initialState
+    var lastFrame = now()
+    draw(state.toMap())
+    return { action ->
+        val delta = now() - lastFrame
+        if (delta < frameLenMs) {
+            Thread.sleep(frameLenMs - delta)
+        }
+        lastFrame = now()
+
+        if (action is Move) {
+            state = state.copy(robot = state.robot.copy(position = state.robot.position.move(action)))
+        }
+        draw(initialState.toMap())
+    }
+}
+private fun now(): Long  = System.currentTimeMillis()
+
+private fun Point.move(move: Move): Point {
+    return Point(x + DX[move.direction], y + DY[move.direction])
+}
+
+private fun State.toMap(): Map {
+    val pills = mutableListOf<Pair<Point, Pill>>()
+    return Map(grid.dim,
+        { p ->
+            val c = grid[p]
+            if (robot.parts.contains(p)) {
+                pills += p to Pill.ROBOT
+            }
+            when (c) {
+                Cell.OBSTACLE -> UiCell.WALL
+                Cell.OBSTACLE -> UiCell.WALL
+                Cell.FREE -> UiCell.FREE
+                Cell.WRAPPED -> UiCell.WRAPPED
+                Cell.VOID -> UiCell.VOID
+                else -> {
+                    when (c) {
+                        Cell.B_EXTENSION -> pills += p to Pill.BOOST_B
+                        Cell.B_DRILL -> pills += p to Pill.BOOST_L
+                        Cell.B_FAST_WHEELS -> pills += p to Pill.BOOST_F
+                        Cell.B_MYSTERIOUS_POINT -> pills += p to Pill.BOOST_X
+                    }
+                    UiCell.FREE
+                }
+            }
+
+        }, pills)
+}
+
 
 inline class UiCell(private val value: Byte) {
     companion object {
