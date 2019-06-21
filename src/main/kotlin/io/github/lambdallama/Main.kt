@@ -1,6 +1,7 @@
 package io.github.lambdallama
 
 import java.io.File
+import java.lang.StringBuilder
 import kotlin.math.max
 import kotlin.math.min
 
@@ -37,6 +38,23 @@ data class Poly(val contour: List<Point>) {
 
             return Point(minX, minY) to Point(maxX, maxY)
         }
+
+    operator fun contains(p: Point): Boolean {
+        var count = 0
+        for (i in 0 until contour.size) {
+            val a = contour[i]
+            val b = contour[(i + 1) % contour.size]
+            if (a.x == b.x) {  // vertical.
+                if (p.y in a.y..b.y) {
+                    count++
+                }
+            } else {  // horizontal.
+                check(a.y == b.y)
+            }
+        }
+
+        return count > 0
+    }
 
     companion object {
         fun parse(s: String): Poly {
@@ -89,19 +107,16 @@ class ByteMatrix(
 ) {
     private val buf: ByteArray = ByteArray(numRows * numCols).apply { fill(value) }
 
-    operator fun set(p: Poly, value: Byte) {
-        // TODO(superbobry): fill the contour.
-        for (i in 1 until p.contour.size) {
-            val a = p.contour[i - 1]
-            val b = p.contour[i]
-            if (a.x == b.x) {
-                for (y in min(a.y, b.y)..max(a.y, b.y)) {
-                    set(a.x, y, value)
-                }
-            } else {
-                check(a.y == b.y)
-                for (x in min(a.x, b.x)..max(a.x, b.x)) {
-                    set(x, a.y, value)
+    operator fun set(poly: Poly, value: Byte) {
+        val (bottomLeft, topRight) = poly.bbox
+        val (minX, minY) = bottomLeft
+        val (maxX, maxY) = topRight
+
+        for (x in minX..maxX) {
+            for (y in minY..maxY) {
+                val p = Point(x, y)
+                if (p in poly) {
+                    set(p, value)
                 }
             }
         }
@@ -119,6 +134,19 @@ class ByteMatrix(
 
     private operator fun set(i: Int, j: Int, value: Byte) {
         buf[i * numCols + j] = value
+    }
+
+    override fun toString(): String {
+        val sb = StringBuilder()
+        for (y in 0 until numRows) {
+            for (x in 0 until numCols) {
+                sb.append(get(y, x).toChar())
+            }
+
+            sb.append('\n')
+        }
+
+        return sb.toString()
     }
 }
 
@@ -146,8 +174,10 @@ data class Task(
         val (bottomLeft, topRight) = map.bbox
         val (minX, minY) = bottomLeft
         val (maxX, maxY) = topRight
-        val numRows = maxY - minY
-        val numCols = maxX - minX
+        // TODO(superbobry): apply shift if minX/minY are non-zero.
+        check(minX == 0 && minY == 0)
+        val numRows = (maxY + 1) - minY
+        val numCols = (maxX + 1) - minX
         val grid = ByteMatrix(numRows, numCols, VOID)
         grid[map] = FREE
         for (obstacle in obstacles) {
@@ -227,4 +257,8 @@ fun main(args: Array<String>) {
             if (i % 2 == 0) WRAPPED else FREE
         })
     }
+
+    val task = Task.parse(File("part-1-initial/prob-005.desc").readText())
+    val state = task.toState()
+    println(state.grid)
 }
