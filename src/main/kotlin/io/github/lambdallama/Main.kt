@@ -173,7 +173,7 @@ fun main(args: Array<String>) {
     for (i in 0 until 100) {
         Thread.sleep(300)
         draw(Map(10, 10) { _, _ ->
-            if (i % 2 == 0) EMPTY else WRAPPED
+            if (i % 2 == 0) WRAPPED else FREE
         })
     }
 

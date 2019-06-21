@@ -24,14 +24,10 @@ fun draw(map: Map) {
 
 typealias Cell = Byte
 
-const val EMPTY: Cell = 0
-const val WALL: Cell = 1
-const val WRAPPED: Cell = 2
-
 class Map(
     val width: Int,
     val height: Int,
-    init: (Int, Int) -> Cell = { _, _ -> EMPTY }
+    init: (Int, Int) -> Cell = { _, _ -> FREE }
 ) {
     private val cells: Array<Cell> = Array(width * height) { i -> init(i / width, i % width) }
     operator fun get(row: Int, col: Int): Cell =
@@ -44,7 +40,7 @@ private val FRAME = JFrame("HelloWorldSwing").apply {
     contentPane.add(Canvas())
 }
 
-private var STATE = Map(10, 10) { _, _ -> EMPTY }
+private var STATE = Map(10, 10) { _, _ -> FREE }
 
 private class Canvas : JPanel() {
     val cellSize = 40
@@ -58,9 +54,10 @@ private class Canvas : JPanel() {
         for (row in 0 until map.height) {
             for (col in 0 until map.width) {
                 g.color = when (map[row, col]) {
-                    WALL -> Color.BLACK
-                    EMPTY -> Color.GRAY
+                    OBSTACLE -> Color.BLACK
+                    FREE -> Color.GRAY
                     WRAPPED -> Color.YELLOW
+                    VOID -> Color.WHITE
                     else -> kotlin.error("bad state")
                 }
                 g.fillRect(
