@@ -27,5 +27,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    visualize(state)
+    Naive.run(state, visualize(state, true))
 }

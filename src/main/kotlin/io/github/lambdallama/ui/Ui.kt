@@ -6,6 +6,7 @@ import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
+import java.util.concurrent.Semaphore
 import javax.swing.*
 import kotlin.math.max
 import kotlin.math.min
@@ -24,14 +25,19 @@ fun draw(newMap: Map) {
 
 private const val frameLenMs = 300
 
-fun visualize(initialState: State): ActionSink {
+fun visualize(initialState: State, step: Boolean = false): ActionSink {
     var state = initialState
     var lastFrame = now()
     draw(state.toMap())
     return { action ->
-        val delta = now() - lastFrame
-        if (delta < frameLenMs) {
-            Thread.sleep(frameLenMs - delta)
+        println("action = ${action}")
+        if (step) {
+            UI.stepSemaphore.acquire()
+        } else {
+            val delta = now() - lastFrame
+            if (delta < frameLenMs) {
+                Thread.sleep(frameLenMs - delta)
+            }
         }
         lastFrame = now()
 
@@ -104,6 +110,7 @@ class ViewState(
 )
 
 private class Ui {
+    var stepSemaphore: Semaphore = Semaphore(1)
     private val viewState: ViewState = ViewState(null, 0, 0)
 
     fun modifyState(f: ViewState.() -> Unit) {
@@ -125,6 +132,7 @@ private class Ui {
                         KeyEvent.VK_RIGHT -> dx += 10
                         KeyEvent.VK_UP -> dy -= 10
                         KeyEvent.VK_DOWN -> dy += 10
+                        KeyEvent.VK_SPACE -> stepSemaphore.release()
                     }
 
                 }
