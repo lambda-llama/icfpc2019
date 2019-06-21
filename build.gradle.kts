@@ -17,6 +17,11 @@ dependencies {
 }
 
 tasks {
+    compileTestKotlin {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
     compileKotlin {
         kotlinOptions {
             jvmTarget = "1.8"

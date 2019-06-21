@@ -4,16 +4,9 @@ import com.google.common.collect.ArrayListMultimap
 import kotlin.math.max
 import kotlin.math.min
 
-inline class Point(val xy: Long) {
-    inline val x: Int get() = xy.toInt()
-    inline val y: Int get() = (xy shr 32).toInt()
-
-    operator fun component1(): Int = x
-    operator fun component2(): Int = y
+data class Point(val x: Int, val y: Int) {
 
     companion object {
-        operator fun invoke(x: Int, y: Int) = Point(x.toLong() or (y.toLong() shl Integer.SIZE))
-
         fun parse(s: String): Point {
             check(s.first() == '(' && s.last() == ')')
             val (x, y) = s.slice(1 until s.length - 1).split(',', limit = 2)
@@ -21,7 +14,7 @@ inline class Point(val xy: Long) {
         }
     }
 
-    operator fun plus(other: Point): Point = Point(xy + other.xy)
+    operator fun plus(other: Point): Point = Point(x + other.x, y + other.y)
     operator fun times(other: Point): Int = x * other.x + y * other.y
 
     fun rotate(orientation: Orientation) = Point(
@@ -51,7 +44,7 @@ enum class Orientation(
     DOWN(
 
             ax = Point(0, 1),
-            ay = Point(1, 0)
+            ay = Point(-1, 0)
     )
 }
 
