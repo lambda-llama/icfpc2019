@@ -39,6 +39,4 @@ fun main(args: Array<String>) {
     for (i in 0 until 100) {
         Thread.sleep(300)
     }
-
-    println(state.grid)
 }
