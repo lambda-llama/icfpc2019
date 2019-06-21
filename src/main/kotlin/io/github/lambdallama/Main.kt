@@ -6,6 +6,7 @@ import kotlin.math.min
 
 const val OBSTACLE = 'O'.toByte()
 const val WRAPPED = 'W'.toByte()
+const val FREE = ' '.toByte()
 const val VOID = 'V'.toByte()
 
 data class Point(val x: Int, val y: Int) {
@@ -107,6 +108,8 @@ inline val Byte.isObstacle: Boolean get() = this == OBSTACLE
 inline val Byte.isWrapped: Boolean get() = this == WRAPPED
 /** Is it out of bounds of the map? */
 inline val Byte.isVoid: Boolean get() = this == VOID
+/** Is it within bounds of the map and could be wrapped? */
+inline val Byte.isFree: Boolean get() = this == FREE
 
 data class State(
     val grid: ByteMatrix,
@@ -126,11 +129,10 @@ data class Task(
         val numRows = maxY - minY
         val numCols = maxX - minX
         val grid = ByteMatrix(numRows, numCols, VOID)
-
+        grid[map] = FREE
         for (obstacle in obstacles) {
             grid[obstacle] = OBSTACLE
         }
-
         for (booster in boosters) {
             grid[booster.loc] = booster.type.toByte()
         }
