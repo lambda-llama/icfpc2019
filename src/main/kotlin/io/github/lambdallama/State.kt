@@ -1,9 +1,13 @@
 package io.github.lambdallama
 
+import kotlin.math.*
+
 data class State(
     val grid: ByteMatrix,
     val robot: Robot
 ) {
+    val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
+
     companion object {
         fun parse(s: String): State {
             val (rawMap, rawInitial, rawObstacles, rawBoosters) = s.split('#')

@@ -6,6 +6,7 @@ import java.io.File
 
 fun nonInteractiveMain(path: String) {
     val state = State.parse(File(path).readText())
+    println("Map: $path, max points: ${state.maxPoints}")
     val solutionFile = File(path.substring(0, path.length - 5) + ".sol")
     val strategy = Naive
     strategy.run(state).also { actions ->
