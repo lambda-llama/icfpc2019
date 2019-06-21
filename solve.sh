@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OUTDIR=./solutions
-SOLUTION=$OUTDIR/solution-$(date +%s).zip
+SOLUTION=$OUTDIR/solution-$(date --iso-8601=seconds).zip
 
 for f in $(find . -name '*.desc' | sort -n); do
     java -jar ./build/libs/icfpc2019.jar --non-interactive $f
