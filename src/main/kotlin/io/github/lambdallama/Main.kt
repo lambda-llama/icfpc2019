@@ -6,12 +6,16 @@ import java.io.File
 fun nonInteractiveMain(path: String) {
     val state = State.parse(File(path).readText())
     println("Map: $path, max points: ${state.maxPoints}")
+
+    val solutions = arrayOf(NaiveIterative, Greedy).map {
+        val actions = mutableListOf<Action>()
+        it.run(state.clone(), actions::plusAssign)
+        System.err.println("${it.javaClass.simpleName}: ${actions.size}")
+        actions
+    }
+
     val solutionFile = File(path.substring(0, path.length - 5) + ".sol")
-    val strategy = NaiveIterative
-    val actions = mutableListOf<Action>()
-    strategy.run(state.clone(), actions::plusAssign)
-    System.err.println(actions.size)
-    solutionFile.writeText(actions.joinToString(""))
+    solutionFile.writeText(solutions.minBy { it.size }!!.joinToString(""))
 }
 
 fun main(args: Array<String>) {
@@ -27,5 +31,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    Naive.run(state, visualize(state, true))
+    Greedy.run(state, visualize(state, true))
 }

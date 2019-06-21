@@ -31,7 +31,7 @@ object NaiveIterative : Strategy {
         val grid = state.grid
         val initial = state.robot.position
         val q = ArrayDeque<Point>()
-        q.add(initial)
+        q.addFirst(initial)
         while (q.isNotEmpty()) {
             val u = q.first
             grid[u] = Cell.WRAPPED
@@ -51,5 +51,56 @@ object NaiveIterative : Strategy {
                 q.addFirst(v)
             }
         }
+    }
+}
+
+object Greedy : Strategy {
+    override fun run(state: State, sink: ActionSink) {
+        val grid = state.grid
+        state.robot.wrap(grid)
+        while (true) {
+            check(grid[state.robot.position] == Cell.WRAPPED)
+            val path = closestFree(grid, state.robot.position)
+            if (grid[path.last()] != Cell.FREE) {
+                break
+            }
+
+            check(path.first() == state.robot.position)
+            for (v in path.drop(1)) {
+                sink(MOVES.first { it(state.robot.position) == v })
+                state.robot.position = v
+                state.robot.wrap(grid)
+            }
+        }
+    }
+
+    private fun closestFree(grid: ByteMatrix, initial: Point): List<Point> {
+        val backtrack = mutableMapOf<Point, Point?>(initial to null)
+        val q = ArrayDeque<Point>()
+        q.addLast(initial)
+        var u: Point? = initial
+        while (q.isNotEmpty()) {
+            u = q.removeFirst()
+            if (grid[u] == Cell.FREE) {
+                break
+            }
+
+            for (candidate in MOVES) {
+                val v = candidate(u)
+                if (v in grid
+                    && grid[v] != Cell.OBSTACLE && grid[v] != Cell.VOID
+                    && v !in backtrack) {
+                    q.addLast(v)
+                    backtrack[v] = u
+                }
+            }
+        }
+
+        val path = mutableListOf<Point>()
+        while (u != null && u in backtrack) {
+            path.add(u)
+            u = backtrack[u]
+        }
+        return path.reversed()
     }
 }
