@@ -21,20 +21,21 @@ data class Point(val x: Int, val y: Int) {
 
 data class Poly(val contour: List<Point>) {
     /** Bottom-left and top-right corners of the bounding box. */
-    val bbox: Pair<Point, Point> get() {
-        var minX = Int.MAX_VALUE
-        var minY = Int.MAX_VALUE
-        var maxX = 0
-        var maxY = 0
-        for ((x, y) in contour) {
-            minX = min(minX, x)
-            minY = min(minY, y)
-            maxX = max(maxX, x)
-            maxY = max(maxY, y)
-        }
+    val bbox: Pair<Point, Point>
+        get() {
+            var minX = Int.MAX_VALUE
+            var minY = Int.MAX_VALUE
+            var maxX = 0
+            var maxY = 0
+            for ((x, y) in contour) {
+                minX = min(minX, x)
+                minY = min(minY, y)
+                maxX = max(maxX, x)
+                maxY = max(maxY, y)
+            }
 
-        return Point(minX, minY) to Point(maxX, maxY)
-    }
+            return Point(minX, minY) to Point(maxX, maxY)
+        }
 
     companion object {
         fun parse(s: String): Poly {
@@ -168,5 +169,13 @@ data class Task(
 
 
 fun main(args: Array<String>) {
+    launchGui()
+    for (i in 0 until 100) {
+        Thread.sleep(300)
+        draw(Map(10, 10) { _, _ ->
+            if (i % 2 == 0) EMPTY else WRAPPED
+        })
+    }
+
     println(Task.parse(File("part-1-initial/prob-001.desc").readText()))
 }
