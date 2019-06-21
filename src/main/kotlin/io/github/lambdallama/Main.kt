@@ -71,5 +71,16 @@ data class Task(
 
 
 fun main(args: Array<String>) {
+    startUI()
+    for (i in 0..1000) {
+        Thread.sleep(1000)
+        setMap(Map(10, 10) { _, _ ->
+            when (i % 3) {
+                0 -> EMPTY
+                1 -> WALL
+                else -> WRAPPED
+            }
+        })
+    }
     println(Task.parse(File("part-1-initial/prob-001.desc").readText()))
 }
