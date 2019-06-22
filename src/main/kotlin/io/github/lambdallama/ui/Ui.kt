@@ -16,12 +16,9 @@ fun launchGui() {
     }
 }
 
-fun draw(newMap: Map, action: String? = null) {
+fun draw(newMap: Map) {
     UI.modifyState {
         map = newMap
-        if (action != null) {
-            this.lastAction = action
-        }
     }
 }
 
@@ -29,7 +26,6 @@ private const val frameLenMs = 8
 
 fun visualize(initialState: State, step: Boolean = false): ActionSink {
     val state = initialState.clone()
-    state.wrap()
     var lastFrame = now()
     draw(state.toMap())
     return { action ->
@@ -43,7 +39,7 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
         }
         lastFrame = now()
         state.apply(action)
-        draw(state.toMap(), action.toString())
+        draw(state.toMap().apply { lastAction = action.toString() })
     }
 }
 
@@ -62,7 +58,10 @@ private fun State.toMap(): Map {
                 else -> error("bad cell")
             }
 
-        }, robot.getVisibleParts(grid).map { it to Pill.ROBOT } + boosters.map { it.key to it.value.toPill() })
+        },
+        robot.getVisibleParts(grid).map { it to Pill.ROBOT } + boosters.map { it.key to it.value.toPill() },
+        robot.boosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList()
+    )
 }
 
 fun BoosterType.toPill(): Pill = when (this) {
@@ -111,7 +110,7 @@ private class Ui {
 
     fun modifyState(f: ViewState.() -> Unit) {
         f(viewState)
-        label.text = "Last Action: ${viewState.lastAction}"
+        label.text = "Last Action: ${viewState.map?.lastAction ?: "N/A"}; Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}"
         frame.repaint()
     }
 
@@ -160,7 +159,9 @@ private class Ui {
 class Map(
     val dim: Point,
     init: (Point) -> UiCell = { _ -> UiCell.FREE },
-    val pills: List<Pair<Point, Pill>>
+    val pills: List<Pair<Point, Pill>>,
+    var boosers: List<BoosterType> = emptyList(),
+    var lastAction: String? = null
 ) {
     private val cells: Array<UiCell> = Array(height * width) { i -> init(Point(i % width, i / width)) }
     operator fun get(x: Int, y: Int): UiCell =

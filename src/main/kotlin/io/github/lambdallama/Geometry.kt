@@ -23,6 +23,8 @@ data class Point(val x: Int, val y: Int) {
             orientation.ay * this
     )
 
+    fun reverseRotate(orientation: Orientation) = rotate(orientation.opposite)
+
     override fun toString() = "($x,$y)"
 }
 
@@ -53,6 +55,13 @@ enum class Orientation(
                 Orientation.values()[(ordinal + 1) and 3]
             else
                 Orientation.values()[(ordinal + 3) and 3]
+
+    val opposite get(): Orientation = when (this) {
+        Orientation.RIGHT -> Orientation.RIGHT
+        Orientation.UP -> Orientation.DOWN
+        Orientation.LEFT -> Orientation.LEFT
+        Orientation.DOWN -> Orientation.UP
+    }
 }
 
 enum class Rotation {

@@ -51,5 +51,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    GreedySMFTurnover.run(state, visualize(state, true))
+    GreedySMFTurnover.run(state, visualize(state, false))
 }

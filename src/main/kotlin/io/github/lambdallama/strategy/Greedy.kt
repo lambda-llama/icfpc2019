@@ -1,6 +1,5 @@
 package io.github.lambdallama.strategy
 
-import com.google.common.collect.ComparisonChain
 import io.github.lambdallama.*
 import java.util.*
 
@@ -10,8 +9,7 @@ interface Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
         sink(TurnClockwise)
-        state.robot.rotate(Rotation.CLOCKWISE)
-        state.robot.wrap(grid)
+        state.apply(TurnClockwise)
         while (true) {
             check(grid[state.robot.position] == Cell.WRAPPED)
             val path = closestFree(grid, state.robot.position)
@@ -25,14 +23,15 @@ interface Greedy : Strategy {
     }
 
     fun follow(state: State, path: List<Point>, sink: ActionSink) {
-        val grid = state.grid
         for (v in path.drop(1)) {
-            sink(MOVES.first { it(state.robot.position) == v })
-            state.robot.move(grid, state.boosters, v)
+            val move = MOVES.first { it(state.robot.position) == v }
+            sink(move)
+            state.apply(move)
             if (state.robot.boosters[BoosterType.B]!! > 0) {
-                sink(Attach(state.robot.extendReach()))
+                val attach = Attach(state.robot.attachmentPoint())
+                sink(attach)
+                state.apply(attach)
             }
-            state.robot.wrap(grid)
         }
     }
 
@@ -114,7 +113,7 @@ object GreedySMFTurnover: Greedy {
                     clone.boosters[boosterType] = clone.boosters[boosterType]!! + 1
                 }
                 if (state.robot.boosters[BoosterType.B]!! > 0) {
-                    clone.extendReach()
+                    clone.attachTentacle(clone.attachmentPoint())
                     score++
                 }
                 wrapped += clone.getVisibleParts(grid).count { grid[it].isWrapable }
@@ -125,16 +124,19 @@ object GreedySMFTurnover: Greedy {
 
         if (rotation != null) {
             sink(rotation.toMove())
-            state.robot.rotate(rotation)
+            state.apply(rotation.toMove())
         }
         for (i in 1 until path.size) {
             val v = path[i]
-            sink(MOVES.first { it(state.robot.position) == v })
-            state.robot.move(grid, state.boosters, v)
+            val move = MOVES.first { it(state.robot.position) == v }
+            sink(move)
+            state.apply(move)
+
             if (state.robot.boosters[BoosterType.B]!! > 0) {
-                sink(Attach(state.robot.extendReach()))
+                val attach = Attach(state.robot.attachmentPoint())
+                sink(attach)
+                state.apply(attach)
             }
-            state.robot.wrap(grid)
         }
     }
 }

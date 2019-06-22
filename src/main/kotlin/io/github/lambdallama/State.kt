@@ -56,6 +56,10 @@ data class State(
         when (action) {
             is Move -> {
                 robot.position = robot.position.apply(action)
+                val boosterType = boosters.remove(robot.position)
+                if (boosterType != null && boosterType != BoosterType.X) {
+                    robot.boosters[boosterType] = robot.boosters[boosterType]!! +1
+                }
                 wrap()
             }
             is TurnClockwise -> {
@@ -67,19 +71,33 @@ data class State(
                 wrap()
             }
             is Attach -> {
-                robot.tentacles.add(action.location)
+                val n = robot.boosters[BoosterType.B]!!
+                check(n > 0)
+                robot.boosters[BoosterType.B] = n - 1
+                robot.attachTentacle((action.location))
+                wrap()
             }
         }
     }
 
-    fun wrap() = robot.wrap(grid)
+    private fun wrap() {
+        robot.getVisibleParts(grid).forEach { p ->
+            if (grid[p].isWrapable) {
+                grid[p] = Cell.WRAPPED
+            }
+        }
+    }
 }
 
 fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
 
 
 enum class BoosterType {
-    B, F, L, X, R, C;
+    /**
+     * Attach tentacle
+     */
+    B,
+    F, L, X, R, C;
     // TODO: X is not a booster, it's a static spawn point
 }
 

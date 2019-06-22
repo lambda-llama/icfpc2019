@@ -1,10 +1,10 @@
 package io.github.lambdallama
 
-import kotlin.math.abs
-
-data class Robot(var position: Point,
-                 val tentacles: MutableList<Point>,
-                 var orientation: Orientation) {
+data class Robot(
+    var position: Point,
+    val tentacles: MutableList<Point>,
+    var orientation: Orientation
+) {
 
     var boosters: MutableMap<BoosterType, Int> = mutableMapOf(
         BoosterType.B to 0,
@@ -15,22 +15,8 @@ data class Robot(var position: Point,
 
     fun clone() = Robot(position, tentacles.toMutableList(), orientation)
 
-    fun move(grid: ByteMatrix, boosters: MutableMap<Point, BoosterType>, position: Point) {
-        require(position in grid)
-        val cell = grid[position]
-        require(cell != Cell.OBSTACLE && cell != Cell.VOID)
-        val d = this.position - position
-        require(d.x == 0 && abs(d.y) == 1 || abs(d.x) == 1 && d.y == 0)
-        this.position = position
-        boosters.remove(position)?.let { boosterType ->
-            if (boosterType != BoosterType.X) {
-                this.boosters[boosterType] = this.boosters[boosterType]!! + 1
-            }
-        }
-    }
-
     fun rotate(rotation: Rotation) {
-        this.orientation = this.orientation.rotate(rotation)
+        orientation = orientation.rotate(rotation)
     }
 
     fun getVisibleParts(grid: ByteMatrix): List<Point> {
@@ -51,7 +37,7 @@ data class Robot(var position: Point,
             }
 
         var idx = 0
-        var hitWall = mutableListOf(false, false)
+        val hitWall = mutableListOf(false, false)
         val robotDelta = this.position - parts[0]
         return listOf(this.position) + parts.filter { p ->
             val wall = p !in grid || grid[p].isObstacle
@@ -66,22 +52,12 @@ data class Robot(var position: Point,
         }
     }
 
-    fun wrap(grid: ByteMatrix) {
-        getVisibleParts(grid).forEach { p ->
-            if (grid[p].isWrapable) {
-                grid[p] = Cell.WRAPPED
-            }
-        }
+    fun attachTentacle(at: Point) {
+        tentacles += at.reverseRotate(orientation)
     }
 
-    fun extendReach(): Point {
-        require(this.boosters[BoosterType.B]!! > 0)
-        this.boosters[BoosterType.B] = this.boosters[BoosterType.B]!! - 1
+    fun attachmentPoint(): Point {
         val last = this.tentacles.last()
-        val newTentacle = Point(1, if (last.y > 0) -last.y else -last.y + 1)
-        this.tentacles.add(newTentacle)
-        // TODO: this orientation is needed for the result, but is not needed for the UI
-        // TODO: THE UI WILL BE DRAWN INCORRECTLY :(
-        return newTentacle.rotate(this.orientation)
+        return Point(1, if (last.y > 0) -last.y else -last.y + 1).rotate(orientation)
     }
 }
