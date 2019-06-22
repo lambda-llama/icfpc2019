@@ -8,9 +8,20 @@ import io.github.lambdallama.ui.launchGui
 import io.github.lambdallama.ui.visualize
 import java.io.File
 
-fun nonInteractiveMain(path: String, validate: Boolean) {
+fun nonInteractiveMain(
+        path: String,
+        validate: Boolean,
+        showBonusCount: Boolean,
+        infoOnly: Boolean
+) {
     val state = State.parse(File(path).readText())
     println("Map: $path, max points: ${state.maxPoints}")
+    if (showBonusCount) {
+        println("Bonus count: ${bonusCount(state)}")
+    }
+    if (infoOnly) {
+        return
+    }
 
     val solutions = arrayOf(
         NaiveIterative,
@@ -41,10 +52,21 @@ fun main(args: Array<String>) {
     when (args[0]) {
         "--non-interactive" -> {
             var validate = false
-            if (args.count() >= 3 && args[2] == "--validate") {
-                validate = true
+            var showBonusCount = false
+            var infoOnly = false
+            for (arg in args.drop(2)) {
+                when (arg) {
+                    "--validate" -> validate = true
+                    "--show_bonus_count" ->  showBonusCount = true
+                    "--info_only" -> infoOnly = true
+                }
             }
-            return nonInteractiveMain(args[1], validate)
+            return nonInteractiveMain(
+                    path=args[1],
+                    validate=validate,
+                    showBonusCount = showBonusCount,
+                    infoOnly = infoOnly
+            )
         }
     }
 
