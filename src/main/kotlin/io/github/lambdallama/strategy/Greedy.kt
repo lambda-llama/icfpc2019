@@ -26,6 +26,9 @@ interface Greedy : Strategy {
         for (v in path.drop(1)) {
             sink(MOVES.first { it(state.robot.position) == v })
             state.robot.move(grid, v)
+            if (state.robot.boosters[BoosterType.B]!! > 0) {
+                sink(Attach(state.robot.extendReach()))
+            }
             state.robot.wrap(grid)
         }
     }
