@@ -1,9 +1,8 @@
 package io.github.lambdallama.ui
 
 import io.github.lambdallama.*
-import java.awt.Color
-import java.awt.Dimension
-import java.awt.Graphics
+import io.github.lambdallama.Point
+import java.awt.*
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.util.concurrent.Semaphore
@@ -17,9 +16,12 @@ fun launchGui() {
     }
 }
 
-fun draw(newMap: Map) {
+fun draw(newMap: Map, action: String? = null) {
     UI.modifyState {
         map = newMap
+        if (action != null) {
+            this.lastAction = action
+        }
     }
 }
 
@@ -41,10 +43,11 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
         }
         lastFrame = now()
         state.apply(action)
-        draw(state.toMap())
+        draw(state.toMap(), action.toString())
     }
 }
-private fun now(): Long  = System.currentTimeMillis()
+
+private fun now(): Long = System.currentTimeMillis()
 
 private fun State.toMap(): Map {
     val pills = mutableListOf<Pair<Point, Pill>>()
@@ -99,7 +102,8 @@ inline class Pill(private val value: Byte) {
 class ViewState(
     var map: Map?,
     var dx: Int,
-    var dy: Int
+    var dy: Int,
+    var lastAction: String = "N/A"
 )
 
 private class Ui {
@@ -108,13 +112,25 @@ private class Ui {
 
     fun modifyState(f: ViewState.() -> Unit) {
         f(viewState)
+        label.text = "Last Action: ${viewState.lastAction}"
         frame.repaint()
     }
+
+    val label = JLabel("Last Action: N/A", Label.LEFT)
 
     val frame = JFrame("HelloWorldSwing").apply {
         setSize(800, 600)
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-        contentPane.add(Canvas(viewState) { this.size })
+        val gb = GridBagLayout()
+        layout = gb
+
+        contentPane.add(label, GridBagConstraints().apply { gridy = 0; anchor = GridBagConstraints.NORTHWEST })
+
+        val canvas = Canvas(viewState) { this.size }
+        contentPane.add(canvas, GridBagConstraints().apply {
+            gridy = 1; fill = GridBagConstraints.BOTH; weightx = 10.0; weighty = 10.0;
+        })
+
         addKeyListener(object : KeyListener {
             override fun keyTyped(e: KeyEvent?) {}
 
