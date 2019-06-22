@@ -7,12 +7,6 @@ interface Move: Action {
     val dy: Int
     val flipped: Move
 
-    fun orthogonalTo(other: Move) = when (this) {
-        MoveUp, MoveDown -> other == MoveLeft || other == MoveRight
-        MoveLeft, MoveRight -> other == MoveUp || other == MoveDown
-        else -> TODO()
-    }
-
     operator fun invoke(p: Point) = Point(p.x + dx, p.y + dy)
 }
 

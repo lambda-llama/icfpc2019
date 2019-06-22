@@ -1,5 +1,6 @@
 package io.github.lambdallama.strategy
 
+import com.google.common.collect.ComparisonChain
 import io.github.lambdallama.*
 import java.util.*
 
@@ -80,23 +81,59 @@ object GreedySameMoveFirst: Greedy {
     }
 }
 
-object GreedyUnorderedTurnover: Greedy {
-    override fun candidates(u: Point, backtrack: Map<Point, Point?>) = MOVES
+fun Rotation.toMove() = when (this) {
+    Rotation.CLOCKWISE -> TurnClockwise
+    Rotation.COUNTERCLOCKWISE -> TurnCounter
+}
+
+object GreedySMFTurnover: Greedy {
+    override fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move> {
+        val origin = backtrack[u] ?: return MOVES
+        val move = MOVES.first { it(origin) == u }
+        return arrayOf(move) + MOVES.filterNot { it == move }
+    }
 
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         val grid = state.grid
-        val moves = Array(path.size - 1) { i ->
-            MOVES.first { it(path[i]) == path[i + 1] }
-        }
 
-        for (i in 0 until moves.size) {
-            // If the direction changed and the next two moves are the same, turn.
-            if (i < moves.size - 1 && moves[i] == moves[i + 1]) {
+        // Find a starting rotation which maximizes number of wrapped cells per action.
+        val rotation = arrayOf(null, Rotation.CLOCKWISE, Rotation.COUNTERCLOCKWISE).maxBy { candidate ->
+            var wrapped = 0
+            var score = 0
+            val clone = state.robot.clone()
+            candidate?.let {
+                clone.rotate(it)
+                score++
             }
+            for (i in 1 until path.size) {
+                val v = path[i]
+                clone.position = v  // .move is mutating!
+                score++
+                if (grid[v].isBooster) {
+                    val type = BoosterType.fromCell(grid[v])
+                    clone.boosters[type] = clone.boosters[type]!! + 1
+                }
+                if (state.robot.boosters[BoosterType.B]!! > 0) {
+                    clone.extendReach()
+                    score++
+                }
+                wrapped += clone.getVisibleParts(grid).count { grid[it].isWrapable }
+            }
+
+            wrapped / score.toDouble()
         }
 
-        for (v in path.drop(1)) {
+        if (rotation != null) {
+            sink(rotation.toMove())
+            state.robot.rotate(rotation)
+        }
+        for (i in 1 until path.size) {
+            val v = path[i]
+            sink(MOVES.first { it(state.robot.position) == v })
             state.robot.move(grid, v)
+            if (state.robot.boosters[BoosterType.B]!! > 0) {
+                sink(Attach(state.robot.extendReach()))
+            }
             state.robot.wrap(grid)
         }
     }
