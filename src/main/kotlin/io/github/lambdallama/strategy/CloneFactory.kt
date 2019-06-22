@@ -21,7 +21,7 @@ object CloneFactory : Strategy {
         while (state.hasBooster(BoosterType.C)) {
             val nRobots = state.robots.size
             val nBoosters = state.nBoosters(BoosterType.C)
-            val actions = (0 until nRobots).map { if (it < nBoosters) Clone else null }
+            val actions = (0 until nRobots).map { if (it < nBoosters) Clone else NoOp }
             state.apply(actions)
             sink(actions)
         }
@@ -41,7 +41,7 @@ object CloneFactory : Strategy {
         check(moves.size == state.robots.size)
         val len = moves.map { it.size }.max()!!
         for (i in 0 until len) {
-            val actions = moves.map { it.getOrNull(i) }
+            val actions = moves.map { it.getOrNull(i) ?: NoOp }
             state.apply(actions)
             sink(actions)
         }

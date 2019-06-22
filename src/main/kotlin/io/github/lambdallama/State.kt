@@ -53,10 +53,10 @@ data class State(
         }
     }
 
-    fun apply(actions: List<Action?>) {
+    fun apply(actions: List<Action>) {
         require(actions.size == robots.size)
         for ((robot, action) in robots.zip(actions)) {
-            if (action != null) apply(robot, action)
+            apply(robot, action)
         }
     }
 
@@ -104,6 +104,7 @@ data class State(
                 robots += Robot(robot.position)
                 wrap()
             }
+            is NoOp -> Unit
         }
     }
 

@@ -82,4 +82,4 @@ object NoOp : Action {
     override fun toString() = "Z"
 }
 
-typealias ActionSink = (List<Action?>) -> Unit
+typealias ActionSink = (List<Action>) -> Unit
