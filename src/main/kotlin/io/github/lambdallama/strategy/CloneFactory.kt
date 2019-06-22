@@ -27,9 +27,6 @@ object CloneFactory : Strategy {
         }
 
         val chunks = chunkify(state.grid, state.robots.size)
-        for (chunk in chunks) {
-            println("chunk = ${chunk.size}")
-        }
         val paths = chunks.map { chunk ->
             val start = state.robot.position
             val end = chunk.last()

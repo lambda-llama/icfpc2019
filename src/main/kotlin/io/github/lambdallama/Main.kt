@@ -25,17 +25,20 @@ fun nonInteractiveMain(
         GreedyUnordered,
         GreedyUnorderedTurnover,
         GreedyUnorderedFBPartition,
-        GreedyTurnoverFBPartition
+        GreedyTurnoverFBPartition,
+        CloneFactory
     ).map { strategy ->
-        val actions = mutableListOf<Action>()
-        strategy.run(state.clone()) { actions += it.first()!! }
+        val actions = mutableListOf<List<Action?>>()
+        strategy.run(state.clone()) { actions.add(it) }
         System.err.println("${strategy.javaClass.simpleName}: ${actions.size}")
         actions
     }
 
     val solutionPath = path.substring(0, path.length - 5) + ".sol"
     val solutionFile = File(solutionPath)
-    solutionFile.writeText(solutions.minBy { it.size }!!.joinToString(""))
+    val best: List<List<Action?>> = solutions.minBy { it.size }!!.transpose()
+    solutionFile.writeText(
+        best.joinToString("#") { it.filterNotNull().joinToString("") })
 
     if (validate) {
         print("Validating... ")
@@ -44,6 +47,18 @@ fun nonInteractiveMain(
             is JsValidatorResult.Failure -> println("ERROR: ${validationResult.error}")
         }
     }
+}
+
+fun<T> List<List<T>>.transpose(): List<List<T?>> {
+    val n = map { it.size}.max()!!
+    val res = (0 until n).map { mutableListOf<T?>() }
+    for (xs in this) {
+        for (i in 0 until n) {
+            res[i] += xs.getOrNull(i)
+        }
+    }
+
+    return res
 }
 
 fun main(args: Array<String>) {
