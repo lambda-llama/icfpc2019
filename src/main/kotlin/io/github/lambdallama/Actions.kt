@@ -8,6 +8,14 @@ interface Move: Action {
     val flipped: Move
 
     operator fun invoke(p: Point) = Point(p.x + dx, p.y + dy)
+
+    companion object {
+        operator fun invoke(from: Point, to: Point): Move {
+            require(from.manhattanDist(to) == 1)
+            return ALL.find { it(from) == to }!!
+        }
+        val ALL = listOf(MoveRight, MoveUp, MoveLeft, MoveDown)
+    }
 }
 
 object MoveUp: Move {
@@ -54,6 +62,10 @@ data class Attach(val location: Point) : Action {
     override fun toString() = "B$location"
 }
 
+object Clone: Action {
+    override fun toString(): String = "C"
+}
+
 object Accelerate : Action {
     override fun toString() = "F"
 }
@@ -70,4 +82,4 @@ object NoOp : Action {
     override fun toString() = "Z"
 }
 
-typealias ActionSink = (Action) -> Unit
+typealias ActionSink = (List<Action?>) -> Unit

@@ -9,6 +9,8 @@ import java.util.concurrent.Semaphore
 import javax.swing.*
 import kotlin.math.max
 import kotlin.math.min
+import java.awt.Font
+import org.checkerframework.checker.units.qual.g
 
 fun launchGui() {
     SwingUtilities.invokeLater {
@@ -28,7 +30,7 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
     val state = initialState.clone()
     var lastFrame = now()
     draw(state.toMap())
-    return { action ->
+    return { actions ->
         if (step) {
             UI.stepSemaphore.acquire()
         } else {
@@ -38,8 +40,8 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
             }
         }
         lastFrame = now()
-        state.apply(action)
-        draw(state.toMap().apply { lastAction = action.toString() })
+        state.apply(actions)
+        draw(state.toMap().apply { lastAction = actions.toString() })
     }
 }
 
@@ -239,8 +241,11 @@ private class Canvas(val viewState: ViewState, val frameSize: () -> Dimension) :
                     cellSize / 2,
                     cellSize / 2
                 )
+            } else if (pill == Pill.BOOST_X) {
+                g.font = Font("default", Font.BOLD, cellSize)
+                g.drawString("X", px, py + cellSize)
             } else {
-                if (cellSize >= 10) {
+                if (cellSize >= 15) {
                     g.color = Color.BLACK
                     g.fillOval(
                         px + cellSize / 4,
@@ -257,10 +262,10 @@ private class Canvas(val viewState: ViewState, val frameSize: () -> Dimension) :
                     )
                 } else {
                     g.fillOval(
-                        px + cellSize / 4,
-                        py + cellSize / 4,
-                        cellSize / 2,
-                        cellSize / 2
+                        px,
+                        py,
+                        cellSize,
+                        cellSize
                     )
 
                 }

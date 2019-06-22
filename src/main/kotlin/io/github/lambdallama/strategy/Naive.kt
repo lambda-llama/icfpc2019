@@ -15,9 +15,9 @@ object Naive : Strategy {
         for (move in MOVES) {
             val v = move(u)
             if (v in grid && grid[v].canVisit) {
-                sink(move)
+                sink(listOf(move))
                 go(grid, v, sink)
-                sink(move.flipped)
+                sink(listOf(move.flipped))
             }
         }
     }
@@ -44,10 +44,10 @@ object NaiveIterative : Strategy {
                 q.removeFirst()
                 if (q.isNotEmpty()) {
                     val v = q.peekFirst()
-                    sink(MOVES.first { it(v) == u }.flipped)
+                    sink(listOf(MOVES.first { it(v) == u }.flipped))
                 }
             } else {
-                sink(move)
+                sink(listOf(move))
                 val v = move(u)
                 q.addFirst(v)
             }

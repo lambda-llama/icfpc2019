@@ -48,15 +48,7 @@ data class State(
             return State(
                 grid,
                 boosters.map { it.loc to it.type }.toMap(HashMap()),
-                robots = mutableListOf(Robot(
-                    position = initialLoc,
-                    tentacles = mutableListOf(
-                        Point(1, 0),
-                        Point(1, 1),
-                        Point(1, -1)
-                    ),
-                    orientation = Orientation.RIGHT
-                ))
+                robots = mutableListOf(Robot(initialLoc))
             ).apply { wrap() }
         }
     }
@@ -74,8 +66,13 @@ data class State(
 
     private fun apply(robot: Robot, action: Action) {
         val boosterType = boosters.remove(robot.position)
-        if (boosterType != null && boosterType != BoosterType.X) {
-            collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
+        if (boosterType != null) {
+            if (boosterType == BoosterType.X) {
+                // put spawning point back
+                boosters += robot.position to boosterType
+            } else {
+                collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
+            }
         }
         when (action) {
             is Move -> {
@@ -101,11 +98,23 @@ data class State(
                 robot.attachTentacle(action.location)
                 wrap()
             }
+            is Clone -> {
+                check(boosters[robot.position] == BoosterType.X) {
+                    "${boosters[robot.position]} ${robot.position} ${boosters}"
+                }
+                val n = collectedBoosters[BoosterType.C]!!
+                check(n > 0)
+                collectedBoosters[BoosterType.C] = n - 1
+                robots += Robot(robot.position)
+                wrap()
+            }
         }
     }
 
-    fun hasBooster(boosterType: BoosterType): Boolean {
-        return collectedBoosters[boosterType]!! > 0
+    fun hasBooster(boosterType: BoosterType): Boolean = nBoosters(boosterType) > 0
+
+    fun nBoosters(boosterType: BoosterType): Int {
+        return collectedBoosters[boosterType]!!
     }
 
     private fun wrap() {

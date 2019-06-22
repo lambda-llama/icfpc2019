@@ -44,7 +44,7 @@ private inline fun ByteMatrix.bfs(
 interface Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
-        sink(TurnClockwise)
+        sink(listOf(TurnClockwise))
         state.apply(TurnClockwise)
         while (true) {
             check(grid[state.robot.position] == Cell.WRAPPED)
@@ -69,11 +69,11 @@ object GreedyUnordered: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         for (v in path.drop(1)) {
             val move = MOVES.first { it(state.robot.position) == v }
-            sink(move)
+            sink(listOf(move))
             state.apply(move)
             if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
-                sink(attach)
+                sink(listOf(attach))
                 state.apply(attach)
             }
         }
@@ -118,18 +118,18 @@ object GreedyUnorderedTurnover: Greedy {
         }
 
         if (rotation != null) {
-            sink(rotation.toMove())
+            sink(listOf(rotation.toMove()))
             state.apply(rotation.toMove())
         }
         for (i in 1 until path.size) {
             val v = path[i]
             val move = MOVES.first { it(state.robot.position) == v }
-            sink(move)
+            sink(listOf(move))
             state.apply(move)
 
             if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
-                sink(attach)
+                sink(listOf(attach))
                 state.apply(attach)
             }
         }

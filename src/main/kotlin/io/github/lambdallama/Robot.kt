@@ -5,6 +5,17 @@ data class Robot(
     val tentacles: MutableList<Point>,
     var orientation: Orientation
 ) {
+    constructor(position: Point)
+        : this(
+        position,
+        tentacles = mutableListOf(
+            Point(1, 0),
+            Point(1, 1),
+            Point(1, -1)
+        ),
+        orientation = Orientation.RIGHT
+    )
+
 
     fun clone() = Robot(position, tentacles.toMutableList(), orientation)
 

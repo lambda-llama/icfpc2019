@@ -26,10 +26,10 @@ fun nonInteractiveMain(
         GreedyUnorderedTurnover,
         GreedyUnorderedFBPartition,
         GreedyTurnoverFBPartition
-    ).map {
+    ).map { strategy ->
         val actions = mutableListOf<Action>()
-        it.run(state.clone(), actions::plusAssign)
-        System.err.println("${it.javaClass.simpleName}: ${actions.size}")
+        strategy.run(state.clone()) { actions += it.first()!! }
+        System.err.println("${strategy.javaClass.simpleName}: ${actions.size}")
         actions
     }
 
