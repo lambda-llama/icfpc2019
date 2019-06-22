@@ -106,5 +106,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    CloneFactory.run(state, visualize(state, false))
+    GreedyUnorderedFBPartition.run(state, visualize(state, true))
 }

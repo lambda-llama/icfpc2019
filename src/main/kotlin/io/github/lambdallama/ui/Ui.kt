@@ -10,7 +10,8 @@ import javax.swing.*
 import kotlin.math.max
 import kotlin.math.min
 import java.awt.Font
-import org.checkerframework.checker.units.qual.g
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 
 fun launchGui() {
     SwingUtilities.invokeLater {
@@ -105,21 +106,34 @@ class ViewState(
     var map: Map?,
     var dx: Int,
     var dy: Int,
-    var lastAction: String = "N/A"
+    var mouseX: Int,
+    var mouseY: Int
 )
 
 private class Ui {
     var stepSemaphore: Semaphore = Semaphore(1).apply { acquire() }
-    private val viewState: ViewState = ViewState(null, 0, 0)
+    private val viewState: ViewState = ViewState(null, 0, 0, 0, 0)
 
     fun modifyState(f: ViewState.() -> Unit) {
         f(viewState)
-        label.text = "Last Action: ${viewState.map?.lastAction
-            ?: "N/A"}; Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}"
+        label.text = "Last Action: ${viewState.map?.lastAction ?: "N/A"}; " +
+            "Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")} " +
+            "Cell: (${viewState.mouseX / canvas.cellSize}, ${viewState.mouseY /canvas.cellSize})"
+
         frame.repaint()
     }
 
     val label = JLabel("Last Action: N/A", Label.LEFT)
+    val canvas: Canvas = Canvas(viewState, { frame.size }).apply {
+        addMouseListener(object : MouseAdapter() {
+            override fun mousePressed(e: MouseEvent) {
+                modifyState {
+                    mouseX = e.x
+                    mouseY = e.y
+                }
+            }
+        })
+    }
 
     val frame = JFrame("HelloWorldSwing").apply {
         setSize(800, 600)
@@ -129,9 +143,8 @@ private class Ui {
 
         contentPane.add(label, GridBagConstraints().apply { gridy = 0; anchor = GridBagConstraints.NORTHWEST })
 
-        val canvas = Canvas(viewState) { this.size }
         contentPane.add(canvas, GridBagConstraints().apply {
-            gridy = 1; fill = GridBagConstraints.BOTH; weightx = 10.0; weighty = 10.0;
+            gridy = 1; fill = GridBagConstraints.BOTH; weightx = 10.0; weighty = 10.0
         })
 
         addKeyListener(object : KeyListener {
