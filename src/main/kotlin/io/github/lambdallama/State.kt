@@ -8,7 +8,7 @@ data class State(
 ) {
     val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
 
-    fun clone() = State(grid.clone(), robot)
+    fun clone() = State(grid.clone(), robot.copy())
 
     companion object {
         fun parse(s: String): State {

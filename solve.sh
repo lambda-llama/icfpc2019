@@ -1,5 +1,7 @@
 #!/bin/bash
 
+./gradlew shadowJar
+
 OUTDIR=./solutions
 SOLUTION=$OUTDIR/solution-$(date --iso-8601=seconds).zip
 

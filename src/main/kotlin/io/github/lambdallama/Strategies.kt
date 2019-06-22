@@ -59,9 +59,7 @@ interface Greedy : Strategy {
         val grid = state.grid
         state.robot.wrap(grid)
         while (true) {
-            check(grid[state.robot.position] == Cell.WRAPPED) {
-                grid[state.robot.position]
-            }
+            check(grid[state.robot.position] == Cell.WRAPPED)
             val path = closestFree(grid, state.robot.position)
             if (!grid[path.last()].isWrapable) {
                 break
@@ -76,7 +74,7 @@ interface Greedy : Strategy {
         val grid = state.grid
         for (v in path.drop(1)) {
             sink(MOVES.first { it(state.robot.position) == v })
-            state.robot.position = v
+            state.robot.move(grid, v)
             state.robot.wrap(grid)
         }
     }
@@ -94,8 +92,8 @@ interface Greedy : Strategy {
                 break
             }
 
-            for (candidate in candidates(u, backtrack)) {
-                val v = candidate(u)
+            for (move in candidates(u, backtrack)) {
+                val v = move(u)
                 if (v in grid
                     && grid[v] != Cell.OBSTACLE && grid[v] != Cell.VOID
                     && v !in backtrack) {
@@ -122,7 +120,7 @@ object GreedySameMoveFirst: Greedy {
     override fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move> {
         val origin = backtrack[u] ?: return MOVES
         val move = MOVES.first { it(origin) == u }
-        return arrayOf(move) + MOVES
+        return arrayOf(move) + MOVES.filterNot { it == move }
     }
 }
 
@@ -142,7 +140,7 @@ object GreedyUnorderedTurnover: Greedy {
         }
 
         for (v in path.drop(1)) {
-            state.robot.position = v
+            state.robot.move(grid, v)
             state.robot.wrap(grid)
         }
     }
