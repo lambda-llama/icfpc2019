@@ -1,5 +1,8 @@
 package io.github.lambdallama
 
+import io.github.lambdallama.strategy.GreedySameMoveFirst
+import io.github.lambdallama.strategy.GreedyUnordered
+import io.github.lambdallama.strategy.NaiveIterative
 import io.github.lambdallama.ui.*
 import java.io.File
 
@@ -8,9 +11,9 @@ fun nonInteractiveMain(path: String, validate: Boolean) {
     println("Map: $path, max points: ${state.maxPoints}")
 
     val solutions = arrayOf(
-        NaiveIterative,
-        GreedyUnordered,
-        GreedySameMoveFirst
+            NaiveIterative,
+            GreedyUnordered,
+            GreedySameMoveFirst
     ).map {
         val actions = mutableListOf<Action>()
         it.run(state.clone(), actions::plusAssign)
