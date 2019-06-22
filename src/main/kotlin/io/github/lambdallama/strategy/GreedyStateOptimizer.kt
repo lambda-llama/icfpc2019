@@ -3,7 +3,7 @@ package io.github.lambdallama.strategy
 import io.github.lambdallama.*
 import java.util.*
 
-typealias StateFunction = (State) -> Double
+typealias StateFunction = (State, Robot) -> Double
 typealias ActionPolicy = (State, Robot) -> List<Action>
 
 class GreedyStateOptimizer(
@@ -24,8 +24,9 @@ class GreedyStateOptimizer(
                 val best = moves
                         .map { move ->
                             val nextState = currentState.clone()
-                            nextState.apply(nextState.robots[robotIndex], move)
-                            val q = stateFunction(nextState)
+                            var nextStateRobot = nextState.robots[robotIndex]
+                            nextState.apply(nextStateRobot, move)
+                            val q = stateFunction(nextState, nextStateRobot)
                             q to move
                         }.maxBy { it.first }
                 if (best == null) {
@@ -82,38 +83,29 @@ fun wrappedRatio(state: State): Double {
 
 typealias PointPredicate = (State, Point) -> Boolean
 
-fun distanceTo(state: State, targetPointPredicate: PointPredicate): Int? {
+fun distance(state: State, from: Robot, targetPointPredicate: PointPredicate): Int? {
     val grid = state.grid
-    var total = 0;
-    for (robot in state.robots) {
-        val d = mutableMapOf<Point, Int>()
-        val q = ArrayDeque<Point>()
-        d[robot.position] = 0
-        q.addLast(robot.position)
-        var cellFound = false
-        while (q.isNotEmpty()) {
-            val u = q.removeFirst()
-            if (targetPointPredicate(state, u)) {
-                total += d[u]!!
-                cellFound = true
-                break
-            }
-            for (move in MOVES) {
-                val v = move(u)
-                if (v in grid && !grid[v].isObstacle) {
-                    var du = d[u]!! + 1
-                    if (d.getOrDefault(v, Int.MAX_VALUE) > du + 1) {
-                        d[v] = du + 1
-                        q.addLast(v)
-                    }
+    val d = mutableMapOf<Point, Int>()
+    val q = ArrayDeque<Point>()
+    d[from.position] = 0
+    q.addLast(from.position)
+    while (q.isNotEmpty()) {
+        val u = q.removeFirst()
+        if (targetPointPredicate(state, u)) {
+            return d[u]!!
+        }
+        for (move in MOVES) {
+            val v = move(u)
+            if (v in grid && !grid[v].isObstacle) {
+                var du = d[u]!! + 1
+                if (d.getOrDefault(v, Int.MAX_VALUE) > du + 1) {
+                    d[v] = du + 1
+                    q.addLast(v)
                 }
             }
         }
-        if (!cellFound) {
-            return null
-        }
     }
-    return total
+    return null
 }
 
 fun isWrapable(state: State, p: Point): Boolean {
@@ -125,11 +117,19 @@ fun hasTentacleBonus(state: State, p: Point): Boolean {
 }
 
 val WrapDistanceCount = GreedyStateOptimizer(
-        stateFunction = { state: State ->
-            val dw = distanceTo(state, ::isWrapable)?.toDouble() ?: 0.0
-            val nDw = dw / (state.grid.dim.x * state.grid.dim.y * state.robots.size)
-            val dB = distanceTo(state, ::hasTentacleBonus)?.toDouble() ?: 0.0
-            val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y * state.robots.size)
+        stateFunction = { state: State, robot: Robot ->
+            val dw = distance(
+                    state, from = robot,
+                    targetPointPredicate = ::isWrapable
+            )?.toDouble() ?: 0.0
+            val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
+
+            val dB = distance(
+                    state, from = robot,
+                    targetPointPredicate = ::hasTentacleBonus
+            )?.toDouble() ?: 0.0
+            val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y)
+
             wrappedCount(state) - nDw - nDb
         },
         actionPolicy = ::moveAndTurn
