@@ -1,6 +1,7 @@
 package io.github.lambdallama.ui
 
 import io.github.lambdallama.*
+import io.github.lambdallama.Action
 import io.github.lambdallama.Point
 import java.awt.*
 import java.awt.event.KeyEvent
@@ -29,20 +30,46 @@ private const val frameLenMs = 8
 
 fun visualize(initialState: State, step: Boolean = false): ActionSink {
     val state = initialState.clone()
+    val unwind = mutableListOf<List<ReversibleAction>>()
+    val rewind = mutableListOf<List<Action>>()
     var lastFrame = now()
     draw(state.toMap())
     return { actions ->
-        if (step) {
-            UI.stepSemaphore.acquire()
-        } else {
-            val delta = now() - lastFrame
-            if (delta < frameLenMs) {
-                Thread.sleep(frameLenMs - delta)
+        var consumedActions = false
+        while (!consumedActions) {
+            if (step) {
+                UI.stepSemaphore.acquire()
+            } else {
+                val delta = now() - lastFrame
+                if (delta < frameLenMs) {
+                    Thread.sleep(frameLenMs - delta)
+                }
             }
+            lastFrame = now()
+            var processedActions: List<Action>? = null
+            when (UI.stepDirection) {
+                StepDirection.FORWARD -> {
+                    if (rewind.count() > 0) {
+                        processedActions = rewind.removeAt(rewind.count() - 1)
+                        unwind.add(state.apply(processedActions))
+                    } else {
+                        processedActions = actions
+                        unwind.add(state.apply(processedActions))
+                        consumedActions = true
+                    }
+                }
+                StepDirection.BACK -> {
+                    if (unwind.count() > 0) {
+                        val lastActions = unwind.removeAt(unwind.count() - 1)
+                        processedActions = state.unapply(lastActions)
+                        rewind.add(processedActions)
+                    } else {
+                        // TODO: maybe show indication in the GUI
+                    }
+                }
+            }
+            draw(state.toMap().apply { lastAction = processedActions?.toString() })
         }
-        lastFrame = now()
-        state.apply(actions)
-        draw(state.toMap().apply { lastAction = actions.toString() })
     }
 }
 
@@ -110,8 +137,13 @@ class ViewState(
     var mouseY: Int
 )
 
+enum class StepDirection {
+    FORWARD, BACK
+}
+
 private class Ui {
     var stepSemaphore: Semaphore = Semaphore(1).apply { acquire() }
+    var stepDirection: StepDirection = StepDirection.FORWARD
     private val viewState: ViewState = ViewState(null, 0, 0, 0, 0)
 
     fun modifyState(f: ViewState.() -> Unit) {
@@ -157,9 +189,15 @@ private class Ui {
                         KeyEvent.VK_RIGHT -> dx += 10
                         KeyEvent.VK_UP -> dy -= 10
                         KeyEvent.VK_DOWN -> dy += 10
-                        KeyEvent.VK_SPACE -> stepSemaphore.release()
+                        KeyEvent.VK_SPACE -> {
+                            stepDirection = StepDirection.FORWARD
+                            stepSemaphore.release()
+                        }
+                        KeyEvent.VK_Z -> {
+                            stepDirection = StepDirection.BACK
+                            stepSemaphore.release()
+                        }
                     }
-
                 }
             }
 
