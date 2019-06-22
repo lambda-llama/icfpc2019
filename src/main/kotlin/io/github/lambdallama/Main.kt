@@ -30,10 +30,10 @@ fun nonInteractiveMain(
             WrapDistanceCount
     ).map { strategy ->
         when (strategy) {
-            GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->
-                if (state.grid.dim.x >= 100 || state.grid.dim.y >= 100) {
-                    return@map mutableListOf<List<Action?>>()
-                }
+//            GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->
+//                if (state.grid.dim.x >= 100 || state.grid.dim.y >= 100) {
+//                    return@map mutableListOf<List<Action?>>()
+//                }
             CloneFactory ->
                 // TODO(superbobry): HACK HACK HACK.
                 if ("clone" !in path) {

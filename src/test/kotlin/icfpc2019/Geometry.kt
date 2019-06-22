@@ -17,6 +17,16 @@ class PointTest {
         val q = Point(-1, 1)
         assertEquals(Point(0, 2), p + q)
     }
+
+    @Test fun testRange() {
+        for (x in -200..200) {
+            for (y in -200..200) {
+                val p = Point(x, y)
+                assertEquals(p.x, x)
+                assertEquals(p.y, y)
+            }
+        }
+    }
 }
 
 class OrientationTest {
