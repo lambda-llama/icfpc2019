@@ -42,6 +42,7 @@ class GreedyStateOptimizer(
 }
 
 private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
+private val TURNS = arrayOf(TurnClockwise, TurnCounter)
 
 fun allAllowedMovesPolicy(state: State, robot: Robot): List<Action> {
     if (!state.hasWrappableCells) {
@@ -51,6 +52,18 @@ fun allAllowedMovesPolicy(state: State, robot: Robot): List<Action> {
         val nextPostion = move(robot.position)
         nextPostion in state.grid && !state.grid[nextPostion].isObstacle
     }
+}
+
+fun moveAndTurn(state: State, robot: Robot): List<Action> {
+    if (state.hasBooster(BoosterType.B)) {
+        return listOf(Attach(robot.attachmentPoint()))
+    }
+    var moves = allAllowedMovesPolicy(state, robot)
+    if (moves.isEmpty()) {
+        return moves
+    }
+    moves += TURNS
+    return moves
 }
 
 fun wrappedCount(state: State): Int {
@@ -63,7 +76,9 @@ fun wrappedRatio(state: State): Double {
     return wrapped / (wrapped + free).toDouble()
 }
 
-fun distanceToWrappable(state: State): Int? {
+typealias PointPredicate = (State, Point) -> Boolean
+
+fun distanceTo(state: State, targetPointPredicate: PointPredicate): Int? {
     val grid = state.grid
     val d = mutableMapOf<Point, Int>()
     val q = ArrayDeque<Point>()
@@ -73,7 +88,7 @@ fun distanceToWrappable(state: State): Int? {
     }
     while (q.isNotEmpty()) {
         val u = q.removeFirst()
-        if (grid[u].isWrapable) {
+        if (targetPointPredicate(state, u)) {
             return d[u]!!
         }
         for (move in MOVES) {
@@ -90,12 +105,22 @@ fun distanceToWrappable(state: State): Int? {
     return null
 }
 
+fun isWrapable(state: State, p: Point): Boolean {
+    return state.grid[p].isWrapable
+}
+
+fun hasTentacleBonus(state: State, p: Point): Boolean {
+    return state.boosters[p] == BoosterType.B
+}
 
 val WrapDistanceCount = GreedyStateOptimizer(
         stateFunction = { state: State ->
-            val dw = distanceToWrappable(state)?.toDouble() ?: 0.0
-            val d = dw / (state.grid.dim.x * state.grid.dim.y)
-            wrappedCount(state) - d
+            val dw = distanceTo(state, ::isWrapable)?.toDouble() ?: 0.0
+            val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
+
+            val dB = distanceTo(state, ::hasTentacleBonus)?.toDouble() ?: 0.0
+            val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y)
+            wrappedCount(state) - nDw - nDb
         },
-        actionPolicy = ::allAllowedMovesPolicy
+        actionPolicy = ::moveAndTurn
 )
