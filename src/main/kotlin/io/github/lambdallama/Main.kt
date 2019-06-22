@@ -1,9 +1,6 @@
 package io.github.lambdallama
 
-import io.github.lambdallama.strategy.GreedyFBPartition
-import io.github.lambdallama.strategy.GreedyUnordered
-import io.github.lambdallama.strategy.GreedyUnorderedTurnover
-import io.github.lambdallama.strategy.NaiveIterative
+import io.github.lambdallama.strategy.*
 import io.github.lambdallama.ui.launchGui
 import io.github.lambdallama.ui.visualize
 import java.io.File
@@ -15,7 +12,7 @@ fun nonInteractiveMain(
         infoOnly: Boolean
 ) {
     val state = State.parse(File(path).readText())
-    println("Map: $path, max points: ${state.maxPoints}")
+    println("Map: $path, dim: ${state.grid.dim}, max points: ${state.maxPoints}")
     if (showBonusCount) {
         println("Bonus count: ${bonusCount(state)}")
     }
@@ -27,7 +24,8 @@ fun nonInteractiveMain(
         NaiveIterative,
         GreedyUnordered,
         GreedyUnorderedTurnover,
-        GreedyFBPartition
+        GreedyUnorderedFBPartition,
+        GreedyTurnoverFBPartition
     ).map {
         val actions = mutableListOf<Action>()
         it.run(state.clone(), actions::plusAssign)
@@ -76,5 +74,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    GreedyFBPartition.run(state, visualize(state, false))
+    GreedyTurnoverFBPartition.run(state, visualize(state, false))
 }

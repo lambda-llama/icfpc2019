@@ -67,7 +67,6 @@ interface Greedy : Strategy {
 
 object GreedyUnordered: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
-        val grid = state.grid
         for (v in path.drop(1)) {
             val move = MOVES.first { it(state.robot.position) == v }
             sink(move)
@@ -169,7 +168,7 @@ fun ByteMatrix.fbPartition(): List<Set<Point>> {
     return components
 }
 
-object GreedyFBPartition : Greedy {
+interface GreedyFBPartition : Greedy {
     override fun route(state: State): List<Point> {
         val grid = state.grid
         val components = grid.fbPartition()
@@ -188,10 +187,6 @@ object GreedyFBPartition : Greedy {
                 return path
             }
         }
-    }
-
-    override fun follow(state: State, path: List<Point>, sink: ActionSink) {
-        return GreedyUnordered.follow(state, path, sink)
     }
 
     private fun distanceToAll(grid: ByteMatrix, initial: Point): Map<Point, Int> {
@@ -214,5 +209,17 @@ object GreedyFBPartition : Greedy {
             }
         }
         return distances
+    }
+}
+
+object GreedyUnorderedFBPartition : GreedyFBPartition {
+    override fun follow(state: State, path: List<Point>, sink: ActionSink) {
+        return GreedyUnordered.follow(state, path, sink)
+    }
+}
+
+object GreedyTurnoverFBPartition : GreedyFBPartition {
+    override fun follow(state: State, path: List<Point>, sink: ActionSink) {
+        return GreedyUnorderedTurnover.follow(state, path, sink)
     }
 }
