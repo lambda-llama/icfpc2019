@@ -49,7 +49,7 @@ data class State(
                     ),
                     orientation = Orientation.RIGHT
                 )
-            )
+            ).apply { wrap() }
         }
     }
 

@@ -8,7 +8,6 @@ private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
 interface Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
-        state.robot.wrap(grid)
         sink(TurnClockwise)
         state.robot.rotate(Rotation.CLOCKWISE)
         state.robot.wrap(grid)
