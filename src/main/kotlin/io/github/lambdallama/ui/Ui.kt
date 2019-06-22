@@ -60,7 +60,7 @@ private fun State.toMap(): Map {
 
         },
         robot.getVisibleParts(grid).map { it to Pill.ROBOT } + boosters.map { it.key to it.value.toPill() },
-        robot.boosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList()
+        collectedBoosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList()
     )
 }
 

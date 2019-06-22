@@ -6,13 +6,6 @@ data class Robot(
     var orientation: Orientation
 ) {
 
-    var boosters: MutableMap<BoosterType, Int> = mutableMapOf(
-        BoosterType.B to 0,
-        BoosterType.F to 0,
-        BoosterType.L to 0,
-        BoosterType.R to 0,
-        BoosterType.C to 0)
-
     fun clone() = Robot(position, tentacles.toMutableList(), orientation)
 
     fun rotate(rotation: Rotation) {

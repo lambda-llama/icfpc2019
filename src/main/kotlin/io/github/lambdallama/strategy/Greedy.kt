@@ -27,7 +27,7 @@ interface Greedy : Strategy {
             val move = MOVES.first { it(state.robot.position) == v }
             sink(move)
             state.apply(move)
-            if (state.robot.boosters[BoosterType.B]!! > 0) {
+            if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
                 sink(attach)
                 state.apply(attach)
@@ -100,6 +100,7 @@ object GreedySMFTurnover: Greedy {
             var wrapped = 0
             var score = 0
             val clone = state.robot.clone()
+            val boosters = HashMap(state.collectedBoosters)
             candidate?.let {
                 clone.rotate(it)
                 score++
@@ -110,9 +111,9 @@ object GreedySMFTurnover: Greedy {
                 score++
                 val boosterType = state.boosters[v]
                 if (boosterType != null && boosterType != BoosterType.X) {
-                    clone.boosters[boosterType] = clone.boosters[boosterType]!! + 1
+                    boosters[boosterType] = boosters[boosterType]!! + 1
                 }
-                if (state.robot.boosters[BoosterType.B]!! > 0) {
+                if (boosters[BoosterType.B]!! > 0) {
                     clone.attachTentacle(clone.attachmentPoint())
                     score++
                 }
@@ -132,7 +133,7 @@ object GreedySMFTurnover: Greedy {
             sink(move)
             state.apply(move)
 
-            if (state.robot.boosters[BoosterType.B]!! > 0) {
+            if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
                 sink(attach)
                 state.apply(attach)

@@ -5,7 +5,14 @@ import kotlin.math.*
 data class State(
     val grid: ByteMatrix,
     val boosters: MutableMap<Point, BoosterType>,
-    val robot: Robot
+    val robot: Robot,
+    val collectedBoosters: MutableMap<BoosterType, Int> = mutableMapOf(
+        BoosterType.B to 0,
+        BoosterType.F to 0,
+        BoosterType.L to 0,
+        BoosterType.R to 0,
+        BoosterType.C to 0
+    )
 ) {
     val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
 
@@ -58,7 +65,7 @@ data class State(
                 robot.position = robot.position.apply(action)
                 val boosterType = boosters.remove(robot.position)
                 if (boosterType != null && boosterType != BoosterType.X) {
-                    robot.boosters[boosterType] = robot.boosters[boosterType]!! + 1
+                    collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
                 }
                 wrap()
             }
@@ -71,9 +78,9 @@ data class State(
                 wrap()
             }
             is Attach -> {
-                val n = robot.boosters[BoosterType.B]!!
+                val n = collectedBoosters[BoosterType.B]!!
                 check(n > 0)
-                robot.boosters[BoosterType.B] = n - 1
+                collectedBoosters[BoosterType.B] = n - 1
                 check(
                     robot.tentacles.map { it.rotate(robot.orientation) }
                         .map { it.manhattanDist(action.location) }.min()!! == 1
@@ -82,6 +89,10 @@ data class State(
                 wrap()
             }
         }
+    }
+
+    fun hasBooster(boosterType: BoosterType): Boolean {
+        return collectedBoosters[boosterType]!! > 0
     }
 
     private fun wrap() {
@@ -101,7 +112,16 @@ enum class BoosterType {
      * Attach tentacle
      */
     B,
-    F, L, X, R, C;
+    F, L,
+    /**
+     * Spawn point
+     */
+    X,
+    R,
+    /**
+     * Clone
+     */
+    C;
     // TODO: X is not a booster, it's a static spawn point
 }
 
