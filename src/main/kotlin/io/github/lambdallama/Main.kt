@@ -79,7 +79,7 @@ fun main(args: Array<String>) {
             var validate = false
             var showBonusCount = false
             var infoOnly = false
-            for (arg in args.drop(2)) {
+            for (arg in args.dropLast(1)) {
                 when (arg) {
                     "--validate" -> validate = true
                     "--show_bonus_count" ->  showBonusCount = true
