@@ -8,7 +8,7 @@ data class State(
 ) {
     val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
 
-    fun clone() = State(grid.clone(), robot.copy())
+    fun clone() = State(grid.clone(), robot.clone())
 
     companion object {
         fun parse(s: String): State {
@@ -42,7 +42,7 @@ data class State(
                 grid,
                 robot = Robot(
                     position = initialLoc,
-                    tentacles = listOf(
+                    tentacles = mutableListOf(
                         Point(1, 0),
                         Point(1, 1),
                         Point(1, -1)
@@ -56,14 +56,17 @@ data class State(
     fun apply(action: Action) {
         when (action) {
             is Move -> {
-                robot = robot.copy(position = robot.position.apply(action))
+                robot.position = robot.position.apply(action)
                 wrap()
+            }
+            is Attach -> {
+                robot.tentacles.add(action.location)
             }
         }
     }
 
     fun wrap() {
-        for (point in robot.parts) {
+        for (point in robot.getVisibleParts(grid)) {
             if (grid.contains(point) && grid[point] == Cell.FREE) {
                 grid[point] = Cell.WRAPPED
             }
@@ -112,6 +115,11 @@ data class Booster(
 }
 
 inline class Cell(val byte: Byte) {
+    val isObstacle: Boolean get() = when (this) {
+        OBSTACLE, VOID -> true
+        else -> false
+    }
+
     val isWrapable: Boolean get() = when (this) {
         OBSTACLE, VOID, WRAPPED -> false
         else -> true

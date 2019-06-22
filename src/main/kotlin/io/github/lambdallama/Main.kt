@@ -51,5 +51,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    NaiveIterative.run(state, visualize(state, true))
+    GreedySameMoveFirst.run(state, visualize(state, true))
 }

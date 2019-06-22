@@ -51,7 +51,7 @@ private fun State.toMap(): Map {
     return Map(grid.dim,
         { p ->
             val c = grid[p]
-            if (robot.parts.contains(p)) {
+            if (robot.getVisibleParts(grid).contains(p)) {
                 pills += p to Pill.ROBOT
             }
             when (c) {
