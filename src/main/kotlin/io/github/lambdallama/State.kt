@@ -118,9 +118,11 @@ data class State(
     }
 
     private fun wrap() {
-        robot.getVisibleParts(grid).forEach { p ->
-            if (grid[p].isWrapable) {
-                grid[p] = Cell.WRAPPED
+        robots.forEach { robot ->
+            robot.getVisibleParts(grid).forEach { p ->
+                if (grid[p].isWrapable) {
+                    grid[p] = Cell.WRAPPED
+                }
             }
         }
     }
