@@ -9,6 +9,9 @@ interface Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
         state.robot.wrap(grid)
+        sink(TurnClockwise)
+        state.robot.rotate(Rotation.CLOCKWISE)
+        state.robot.wrap(grid)
         while (true) {
             check(grid[state.robot.position] == Cell.WRAPPED)
             val path = closestFree(grid, state.robot.position)
