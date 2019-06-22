@@ -65,7 +65,7 @@ private fun State.toMap(): Map {
                         Cell.B_EXTENSION -> pills += p to Pill.BOOST_B
                         Cell.B_DRILL -> pills += p to Pill.BOOST_L
                         Cell.B_FAST_WHEELS -> pills += p to Pill.BOOST_F
-                        Cell.B_SPAWN_POINT -> pills += p to Pill.BOOST_X
+                        Cell.SPAWN_POINT -> pills += p to Pill.BOOST_X
                     }
                     UiCell.FREE
                 }

@@ -77,14 +77,26 @@ fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
 
 enum class BoosterType {
     B, F, L, X, R, C;
+    // TODO: X is not a booster, it's a static spawn point
 
     fun toCell(): Cell = when (this) {
         B -> Cell.B_EXTENSION
         F -> Cell.B_FAST_WHEELS
         L -> Cell.B_DRILL
-        X -> Cell.B_SPAWN_POINT
+        X -> Cell.SPAWN_POINT
         R -> Cell.B_TELEPORT
         C -> Cell.B_CLONE
+    }
+
+    companion object {
+        fun fromCell(c: Cell): BoosterType = when (c) {
+            Cell.B_EXTENSION -> B
+            Cell.B_FAST_WHEELS -> F
+            Cell.B_DRILL -> L
+            Cell.B_TELEPORT -> R
+            Cell.B_CLONE -> C
+            else -> throw Exception("Invalid Cell $c")
+        }
     }
 }
 
@@ -105,18 +117,23 @@ inline class Cell(val byte: Byte) {
         else -> true
     }
 
+    val isBooster: Boolean get() = when (this) {
+        B_EXTENSION, B_FAST_WHEELS, B_DRILL, B_TELEPORT, B_CLONE -> true
+        else -> false
+    }
+
     companion object {
         val OBSTACLE = Cell('O'.toByte())
         val WRAPPED = Cell('W'.toByte())
         val FREE = Cell(' '.toByte())
         val VOID = Cell('V'.toByte())
+        val SPAWN_POINT: Cell get() = Cell('X'.toByte())
 
         val B_EXTENSION: Cell get() = Cell('B'.toByte())
         val B_FAST_WHEELS: Cell get() = Cell('F'.toByte())
         val B_DRILL: Cell get() = Cell('L'.toByte())
-        val B_SPAWN_POINT: Cell get() = Cell('X'.toByte())
         val B_TELEPORT: Cell get() = Cell('T'.toByte())
-        val B_CLONE: Cell get() = Cell('T'.toByte())
+        val B_CLONE: Cell get() = Cell('C'.toByte())
     }
 }
 
