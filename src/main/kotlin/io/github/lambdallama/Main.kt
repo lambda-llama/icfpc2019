@@ -1,6 +1,9 @@
 package io.github.lambdallama
 
-import io.github.lambdallama.strategy.*
+import io.github.lambdallama.strategy.GreedyFBPartition
+import io.github.lambdallama.strategy.GreedyUnordered
+import io.github.lambdallama.strategy.GreedyUnorderedTurnover
+import io.github.lambdallama.strategy.NaiveIterative
 import io.github.lambdallama.ui.launchGui
 import io.github.lambdallama.ui.visualize
 import java.io.File
@@ -12,8 +15,8 @@ fun nonInteractiveMain(path: String, validate: Boolean) {
     val solutions = arrayOf(
         NaiveIterative,
         GreedyUnordered,
-        GreedySameMoveFirst,
-        GreedySMFTurnover
+        GreedyUnorderedTurnover,
+        GreedyFBPartition
     ).map {
         val actions = mutableListOf<Action>()
         it.run(state.clone(), actions::plusAssign)
@@ -51,5 +54,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    GreedySMFTurnover.run(state, visualize(state, false))
+    GreedyFBPartition.run(state, visualize(state, false))
 }

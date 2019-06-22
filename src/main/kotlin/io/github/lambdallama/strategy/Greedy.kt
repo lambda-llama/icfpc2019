@@ -5,6 +5,42 @@ import java.util.*
 
 private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
 
+private inline fun ByteMatrix.bfs(
+    initial: Point,
+    shouldStop: (Point) -> Boolean): List<Point> {
+    val backtrack = mutableMapOf<Point, Point?>(initial to null)
+    val q = ArrayDeque<Point>()
+    q.addLast(initial)
+    var u: Point? = initial
+    while (q.isNotEmpty()) {
+        u = q.removeFirst()
+        if (shouldStop(u)) {
+            break
+        }
+
+        for (move in MOVES) {
+            val v = move(u)
+            if (v in this && !this[v].isObstacle && v !in backtrack) {
+                q.addLast(v)
+                backtrack[v] = u
+            }
+        }
+    }
+
+    val path = mutableListOf<Point>()
+    while (u != null && u in backtrack) {
+        path.add(u)
+        u = backtrack[u]
+    }
+    path.reverse()
+    return if (path.isNotEmpty() && shouldStop(path.last())) {
+        check(path.first() == initial)
+        path
+    } else {
+        emptyList()
+    }
+}
+
 interface Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
@@ -12,17 +48,26 @@ interface Greedy : Strategy {
         state.apply(TurnClockwise)
         while (true) {
             check(grid[state.robot.position] == Cell.WRAPPED)
-            val path = closestFree(grid, state.robot.position)
-            if (!grid[path.last()].isWrapable) {
+            val path = route(state)
+            if (path.isEmpty()) {
                 break
             }
 
-            check(path.first() == state.robot.position)
             follow(state, path, sink)
         }
     }
 
-    fun follow(state: State, path: List<Point>, sink: ActionSink) {
+    fun route(state: State): List<Point> {
+        val grid = state.grid
+        return grid.bfs(state.robot.position) { grid[it].isWrapable }
+    }
+
+    fun follow(state: State, path: List<Point>, sink: ActionSink)
+}
+
+object GreedyUnordered: Greedy {
+    override fun follow(state: State, path: List<Point>, sink: ActionSink) {
+        val grid = state.grid
         for (v in path.drop(1)) {
             val move = MOVES.first { it(state.robot.position) == v }
             sink(move)
@@ -34,50 +79,6 @@ interface Greedy : Strategy {
             }
         }
     }
-
-    fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move>
-
-    private fun closestFree(grid: ByteMatrix, initial: Point): List<Point> {
-        val backtrack = mutableMapOf<Point, Point?>(initial to null)
-        val q = ArrayDeque<Point>()
-        q.addLast(initial)
-        var u: Point? = initial
-        while (q.isNotEmpty()) {
-            u = q.removeFirst()
-            if (grid[u].isWrapable) {
-                break
-            }
-
-            for (move in candidates(u, backtrack)) {
-                val v = move(u)
-                if (v in grid
-                    && grid[v] != Cell.OBSTACLE && grid[v] != Cell.VOID
-                    && v !in backtrack) {
-                    q.addLast(v)
-                    backtrack[v] = u
-                }
-            }
-        }
-
-        val path = mutableListOf<Point>()
-        while (u != null && u in backtrack) {
-            path.add(u)
-            u = backtrack[u]
-        }
-        return path.reversed()
-    }
-}
-
-object GreedyUnordered: Greedy {
-    override fun candidates(u: Point, backtrack: Map<Point, Point?>) = MOVES
-}
-
-object GreedySameMoveFirst: Greedy {
-    override fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move> {
-        val origin = backtrack[u] ?: return MOVES
-        val move = MOVES.first { it(origin) == u }
-        return arrayOf(move) + MOVES.filterNot { it == move }
-    }
 }
 
 fun Rotation.toMove() = when (this) {
@@ -85,13 +86,7 @@ fun Rotation.toMove() = when (this) {
     Rotation.COUNTERCLOCKWISE -> TurnCounter
 }
 
-object GreedySMFTurnover: Greedy {
-    override fun candidates(u: Point, backtrack: Map<Point, Point?>): Array<Move> {
-        val origin = backtrack[u] ?: return MOVES
-        val move = MOVES.first { it(origin) == u }
-        return arrayOf(move) + MOVES.filterNot { it == move }
-    }
-
+object GreedyUnorderedTurnover: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         val grid = state.grid
 
@@ -139,5 +134,85 @@ object GreedySMFTurnover: Greedy {
                 state.apply(attach)
             }
         }
+    }
+}
+
+/** Partition the matrix into components of connected FREE/Booster cells. */
+fun ByteMatrix.fbPartition(): List<Set<Point>> {
+    val components = mutableListOf<Set<Point>>()
+    val seen = mutableSetOf<Point>()
+    for (x in 0 until dim.x) {
+        for (y in 0 until dim.y) {
+            val initial = Point(x, y)
+            if (initial !in seen
+                && !this[initial].isObstacle && this[initial] != Cell.WRAPPED) {
+                val component = mutableSetOf(initial)
+                val q = ArrayDeque<Point>()
+                q.addLast(initial)
+                while (q.isNotEmpty()) {
+                    val u = q.removeLast()
+                    for (move in MOVES) {
+                        val v = move(u)
+                        if (v in this && v !in seen
+                            && !this[v].isObstacle && this[v] != Cell.WRAPPED) {
+                            q.addLast(v)
+                            component.add(v)
+                            seen.add(v)
+                        }
+                    }
+                }
+
+                components.add(component)
+            }
+        }
+    }
+    return components
+}
+
+object GreedyFBPartition : Greedy {
+    override fun route(state: State): List<Point> {
+        val grid = state.grid
+        val components = grid.fbPartition()
+        return when (components.size) {
+            0 -> emptyList()
+            1 -> super.route(state)
+            else -> {
+                val distances = distanceToAll(grid, state.robot.position)
+                val closestComponent = components.minBy { component ->
+                    component.map { distances[it]!! }.max()!!
+                }!!
+
+                val closestPoint = closestComponent.minBy { distances[it]!! }!!
+                val path = grid.bfs(state.robot.position) { it == closestPoint }
+                check(path.isNotEmpty())
+                return path
+            }
+        }
+    }
+
+    override fun follow(state: State, path: List<Point>, sink: ActionSink) {
+        return GreedyUnordered.follow(state, path, sink)
+    }
+
+    private fun distanceToAll(grid: ByteMatrix, initial: Point): Map<Point, Int> {
+        val maxDistance = grid.dim.x * grid.dim.y
+        val distances = mutableMapOf<Point, Int>()
+        distances[initial] = 0
+        val q = ArrayDeque<Point>()
+        q.addLast(initial)
+        while (q.isNotEmpty()) {
+            val u = q.removeFirst()
+            for (move in MOVES) {
+                val v = move(u)
+                if (v in grid && !grid[v].isObstacle) {
+                    val alternative = distances[u]!! + 1
+                    if (alternative < distances.getOrDefault(v, maxDistance)) {
+                        distances[v] = alternative
+                        q.addLast(v)
+                    }
+                }
+            }
+        }
+        return distances
     }
 }

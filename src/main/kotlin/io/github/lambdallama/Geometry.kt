@@ -22,10 +22,7 @@ data class Point(val x: Int, val y: Int) {
     fun manhattanDist(other: Point): Int =
         (x - other.x).absoluteValue + (y - other.y).absoluteValue
 
-    fun rotate(orientation: Orientation) = Point(
-            orientation.ax * this,
-            orientation.ay * this
-    )
+    fun rotate(orientation: Orientation) = Point(orientation.ax * this, orientation.ay * this)
 
     fun reverseRotate(orientation: Orientation) = rotate(orientation.opposite)
 
