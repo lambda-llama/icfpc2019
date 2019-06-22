@@ -79,7 +79,6 @@ fun main(args: Array<String>) {
             var validate = false
             var showBonusCount = false
             var infoOnly = false
-            println(args.toList())
             for (arg in args.drop(2)) {
                 when (arg) {
                     "--validate" -> validate = true
