@@ -73,14 +73,7 @@ data class State(
         }
     }
 
-    fun wrap() {
-        for (point in robot.getVisibleParts(grid)) {
-            if (grid.contains(point) && grid[point] == Cell.FREE) {
-                grid[point] = Cell.WRAPPED
-            }
-        }
-
-    }
+    fun wrap() = robot.wrap(grid)
 }
 
 fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
