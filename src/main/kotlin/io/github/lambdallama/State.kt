@@ -76,14 +76,15 @@ fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
 
 
 enum class BoosterType {
-    B, F, L, X, R;
+    B, F, L, X, R, C;
 
     fun toCell(): Cell = when (this) {
         B -> Cell.B_EXTENSION
         F -> Cell.B_FAST_WHEELS
         L -> Cell.B_DRILL
-        X -> Cell.B_MYSTERIOUS_POINT
+        X -> Cell.B_SPAWN_POINT
         R -> Cell.B_TELEPORT
+        C -> Cell.B_CLONE
     }
 }
 
@@ -113,8 +114,9 @@ inline class Cell(val byte: Byte) {
         val B_EXTENSION: Cell get() = Cell('B'.toByte())
         val B_FAST_WHEELS: Cell get() = Cell('F'.toByte())
         val B_DRILL: Cell get() = Cell('L'.toByte())
-        val B_MYSTERIOUS_POINT: Cell get() = Cell('X'.toByte())
+        val B_SPAWN_POINT: Cell get() = Cell('X'.toByte())
         val B_TELEPORT: Cell get() = Cell('T'.toByte())
+        val B_CLONE: Cell get() = Cell('T'.toByte())
     }
 }
 
