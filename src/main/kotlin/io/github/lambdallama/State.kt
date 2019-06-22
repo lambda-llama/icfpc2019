@@ -5,7 +5,7 @@ import kotlin.math.*
 data class State(
     val grid: ByteMatrix,
     val boosters: MutableMap<Point, BoosterType>,
-    val robot: Robot,
+    val robots: MutableList<Robot>,
     val collectedBoosters: MutableMap<BoosterType, Int> = mutableMapOf(
         BoosterType.B to 0,
         BoosterType.F to 0,
@@ -16,7 +16,9 @@ data class State(
 ) {
     val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
 
-    fun clone() = State(grid.clone(), HashMap(boosters), robot.clone())
+    val robot get(): Robot = robots.first()
+
+    fun clone() = State(grid.clone(), HashMap(boosters), robots.map { it.clone() }.toMutableList())
 
     companion object {
         fun parse(s: String): State {
@@ -46,7 +48,7 @@ data class State(
             return State(
                 grid,
                 boosters.map { it.loc to it.type }.toMap(HashMap()),
-                robot = Robot(
+                robots = mutableListOf(Robot(
                     position = initialLoc,
                     tentacles = mutableListOf(
                         Point(1, 0),
@@ -54,12 +56,23 @@ data class State(
                         Point(1, -1)
                     ),
                     orientation = Orientation.RIGHT
-                )
+                ))
             ).apply { wrap() }
         }
     }
 
     fun apply(action: Action) {
+        apply(robots.first(), action)
+    }
+
+    fun apply(actions: List<Action?>) {
+        require(actions.size == robots.size)
+        for ((robot, action) in robots.zip(actions)) {
+            if (action != null) apply(robot, action)
+        }
+    }
+
+    private fun apply(robot: Robot, action: Action) {
         val boosterType = boosters.remove(robot.position)
         if (boosterType != null && boosterType != BoosterType.X) {
             collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1

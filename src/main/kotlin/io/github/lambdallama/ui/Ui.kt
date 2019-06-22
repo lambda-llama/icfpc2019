@@ -59,7 +59,9 @@ private fun State.toMap(): Map {
             }
 
         },
-        robot.getVisibleParts(grid).map { it to Pill.ROBOT } + boosters.map { it.key to it.value.toPill() },
+        robots
+            .flatMap { robot -> robot.getVisibleParts(grid).map { it to Pill.ROBOT } }
+            + boosters.map { it.key to it.value.toPill() },
         collectedBoosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList()
     )
 }
@@ -110,7 +112,8 @@ private class Ui {
 
     fun modifyState(f: ViewState.() -> Unit) {
         f(viewState)
-        label.text = "Last Action: ${viewState.map?.lastAction ?: "N/A"}; Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}"
+        label.text = "Last Action: ${viewState.map?.lastAction
+            ?: "N/A"}; Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}"
         frame.repaint()
     }
 
