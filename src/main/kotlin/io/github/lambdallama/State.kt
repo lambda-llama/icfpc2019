@@ -27,7 +27,7 @@ data class State(
     fun fakeClone(idx: Int) = State(
         grid.clone(),
         boosters,  // SHARE.
-        mutableListOf(robots[idx]),
+        mutableListOf(robots[idx].clone()),
         collectedBoosters)  // SHARE.
 
     companion object {
@@ -83,6 +83,7 @@ data class State(
         when (action) {
             is Move -> {
                 robot.position = robot.position.apply(action)
+                check(!grid[robot.position].isObstacle)
                 wrap()
             }
             is TurnClockwise -> {

@@ -26,9 +26,11 @@ object CloneFactory : Strategy {
             sink(actions)
         }
 
-        val chunks = chunkify(state.grid, state.robots.size)
+        // Clone the state to capture the initial state of boosters.
+        val cloneState = state.clone()
+        val chunks = chunkify(cloneState.grid, cloneState.robots.size)
         val moves = chunks.withIndex().map { (idx, chunk) ->
-            val fakeState = state.fakeClone(idx)
+            val fakeState = cloneState.fakeClone(idx)
             val fakeGrid = fakeState.grid
             for (other in chunks) {
                 if (other === chunk) continue
