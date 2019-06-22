@@ -18,7 +18,6 @@ class GreedyStateOptimizer(
             isTerminal = true
             val robotMoves = mutableListOf<Action>()
             var robotIndex = 0
-            println()
             while (robotIndex < currentState.robots.size) {
                 val robot = currentState.robots[robotIndex]
                 val moves = actionPolicy(currentState, robot)
@@ -29,7 +28,6 @@ class GreedyStateOptimizer(
                             val q = stateFunction(nextState)
                             q to move
                         }.maxBy { it.first }
-                println(" ${robotIndex} ${best}")
                 if (best == null) {
                     robotMoves.add(NoOp)
                 } else {
