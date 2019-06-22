@@ -5,3 +5,4 @@ build
 out
 solutions
 lambda-client/blocks
+lambda-client/*.sol
