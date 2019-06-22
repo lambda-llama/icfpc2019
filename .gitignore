@@ -4,5 +4,4 @@ out
 build
 out
 solutions
-*.sol
 lambda-client/blocks
