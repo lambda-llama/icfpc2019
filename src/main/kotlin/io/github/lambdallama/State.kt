@@ -59,6 +59,14 @@ data class State(
                 robot.position = robot.position.apply(action)
                 wrap()
             }
+            is TurnClockwise -> {
+                robot.rotate(Rotation.CLOCKWISE)
+                wrap()
+            }
+            is TurnCounter -> {
+                robot.rotate(Rotation.COUNTERCLOCKWISE)
+                wrap()
+            }
             is Attach -> {
                 robot.tentacles.add(action.location)
             }

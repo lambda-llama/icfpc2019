@@ -4,7 +4,7 @@ import kotlin.math.abs
 
 data class Robot(var position: Point,
                  val tentacles: MutableList<Point>,
-                 val orientation: Orientation) {
+                 var orientation: Orientation) {
 
     var boosters: MutableMap<BoosterType, Int> = mutableMapOf(BoosterType.B to 0, BoosterType.F to 0,
             BoosterType.L to 0, BoosterType.R to 0, BoosterType.C to 0)
@@ -24,6 +24,10 @@ data class Robot(var position: Point,
             this.boosters[type] = this.boosters[type]!! + 1
             grid[position] = Cell.FREE
         }
+    }
+
+    fun rotate(rotation: Rotation) {
+        this.orientation = this.orientation.rotate(rotation)
     }
 
     fun getVisibleParts(grid: ByteMatrix): List<Point> {
@@ -71,7 +75,7 @@ data class Robot(var position: Point,
         require(this.boosters[BoosterType.B]!! > 0)
         this.boosters[BoosterType.B] = this.boosters[BoosterType.B]!! - 1
         val last = this.tentacles.last()
-        val newTentacle = Point(1, if (last.y > 0) -last.y else -last.y + 1)
+        val newTentacle = Point(1, if (last.y > 0) -last.y else -last.y + 1).rotate(this.orientation)
         this.tentacles.add(newTentacle)
         return newTentacle
     }
