@@ -3,7 +3,7 @@ package io.github.lambdallama
 import io.github.lambdallama.ui.*
 import java.io.File
 
-fun nonInteractiveMain(path: String) {
+fun nonInteractiveMain(path: String, validate: Boolean) {
     val state = State.parse(File(path).readText())
     println("Map: $path, max points: ${state.maxPoints}")
 
@@ -18,14 +18,27 @@ fun nonInteractiveMain(path: String) {
         actions
     }
 
-    val solutionFile = File(path.substring(0, path.length - 5) + ".sol")
+    val solutionPath = path.substring(0, path.length - 5) + ".sol"
+    val solutionFile = File(solutionPath)
     solutionFile.writeText(solutions.minBy { it.size }!!.joinToString(""))
+
+    if (validate) {
+        print("Validating... ")
+        when (val validationResult = validateWithJsValidator(path, solutionPath)) {
+            is JsValidatorResult.Success -> println("OK, ${validationResult.time}")
+            is JsValidatorResult.Failure -> println("ERROR: ${validationResult.error}")
+        }
+    }
 }
 
 fun main(args: Array<String>) {
     when (args[0]) {
         "--non-interactive" -> {
-            return nonInteractiveMain(args[1])
+            var validate = false
+            if (args.count() >= 3 && args[2] == "--validate") {
+                validate = true
+            }
+            return nonInteractiveMain(args[1], validate)
         }
     }
 
