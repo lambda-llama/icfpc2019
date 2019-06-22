@@ -2,6 +2,12 @@ package io.github.lambdallama
 
 import kotlin.math.*
 
+class ReversibleAction(val action: Action) {
+    var pickedUpBooster: BoosterType? = null
+    var pickedUpBoosterPosition: Point = Point(0, 0)
+    var wrappedPoints: Map<Point, Cell> = mapOf()
+}
+
 data class State(
     val grid: ByteMatrix,
     val boosters: MutableMap<Point, BoosterType>,
@@ -68,20 +74,23 @@ data class State(
             return (grid.cellCounts[Cell.FREE] ?: 0) > 0
         }
 
-    fun apply(actions: List<Action>) {
+    fun apply(actions: List<Action>): List<ReversibleAction> {
         require(actions.size == robots.size)
-        for ((robot, action) in robots.zip(actions)) {
+        return robots.zip(actions).map { (robot, action) ->
             apply(robot, action)
         }
     }
 
-    fun apply(robot: Robot, action: Action) {
+    fun apply(robot: Robot, action: Action): ReversibleAction {
+        val reverseAction = ReversibleAction(action)
         val boosterType = boosters.remove(robot.position)
         if (boosterType != null) {
             if (boosterType == BoosterType.X) {
                 // put spawning point back
                 boosters += robot.position to boosterType
             } else {
+                reverseAction.pickedUpBooster = boosterType
+                reverseAction.pickedUpBoosterPosition = robot.position
                 collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
             }
         }
@@ -89,26 +98,26 @@ data class State(
             is Move -> {
                 robot.position = robot.position.apply(action)
                 check(!grid[robot.position].isObstacle)
-                wrap()
+                reverseAction.wrappedPoints = wrap()
             }
             is TurnClockwise -> {
                 robot.rotate(Rotation.CLOCKWISE)
-                wrap()
+                reverseAction.wrappedPoints = wrap()
             }
             is TurnCounter -> {
                 robot.rotate(Rotation.COUNTERCLOCKWISE)
-                wrap()
+                reverseAction.wrappedPoints = wrap()
             }
             is Attach -> {
                 val n = collectedBoosters[BoosterType.B]!!
                 check(n > 0)
                 collectedBoosters[BoosterType.B] = n - 1
                 check(
-                    robot.tentacles.map { it.rotate(robot.orientation) }
-                        .map { it.manhattanDist(action.location) }.min()!! == 1
+                        robot.tentacles.map { it.rotate(robot.orientation) }
+                                .map { it.manhattanDist(action.location) }.min()!! == 1
                 )
                 robot.attachTentacle(action.location)
-                wrap()
+                reverseAction.wrappedPoints = wrap()
             }
             is Clone -> {
                 check(boosters[robot.position] == BoosterType.X) {
@@ -118,10 +127,54 @@ data class State(
                 check(n > 0)
                 collectedBoosters[BoosterType.C] = n - 1
                 robots += Robot(robot.position)
-                wrap()
+                reverseAction.wrappedPoints = wrap()
             }
             is NoOp -> Unit
+            else -> TODO("Not supported yet")
         }
+        return reverseAction
+    }
+
+    fun unapply(reverseActions: List<ReversibleAction>): List<Action> {
+        return robots.zip(reverseActions).reversed().map { (robot, action) ->
+            unapply(robot, action)
+        }.reversed()
+    }
+
+    fun unapply(robot: Robot, reverseAction: ReversibleAction): Action {
+        val boosterType = reverseAction.pickedUpBooster
+        if (boosterType != null) {
+            boosters[reverseAction.pickedUpBoosterPosition] = boosterType
+            collectedBoosters[boosterType] = collectedBoosters[boosterType]!! - 1
+        }
+        when (reverseAction.action) {
+            is Move -> {
+                robot.position = robot.position.unapply(reverseAction.action)
+                check(!grid[robot.position].isObstacle)
+                unwrap(reverseAction.wrappedPoints)
+            }
+            is TurnClockwise -> {
+                robot.rotate(Rotation.COUNTERCLOCKWISE)
+                unwrap(reverseAction.wrappedPoints)
+            }
+            is TurnCounter -> {
+                robot.rotate(Rotation.CLOCKWISE)
+                unwrap(reverseAction.wrappedPoints)
+            }
+            is Attach -> {
+                collectedBoosters[BoosterType.B] = collectedBoosters[BoosterType.B]!! + 1
+                robot.detachLastTentacle()
+                unwrap(reverseAction.wrappedPoints)
+            }
+            is Clone -> {
+                collectedBoosters[BoosterType.C] = collectedBoosters[BoosterType.C]!! + 1
+                robots.removeAt(robots.count() - 1)
+                unwrap(reverseAction.wrappedPoints)
+            }
+            is NoOp -> Unit
+            else -> TODO("Not supported yet")
+        }
+        return reverseAction.action
     }
 
     fun hasBooster(boosterType: BoosterType): Boolean = nBoosters(boosterType) > 0
@@ -130,20 +183,29 @@ data class State(
         return collectedBoosters[boosterType]!!
     }
 
-    private fun wrap() {
+    private fun wrap(): MutableMap<Point, Cell> {
+        val wrappedPoints = mutableMapOf<Point, Cell>()
         robots.forEach { robot ->
             check(!grid[robot.position].isObstacle)
             robot.getVisibleParts(grid).forEach { p ->
                 if (grid[p].isWrapable) {
+                    wrappedPoints[p] = grid[p]
                     grid[p] = Cell.WRAPPED
                 }
             }
+        }
+        return wrappedPoints
+    }
+
+    private fun unwrap(wrappedPoints: Map<Point, Cell>) {
+        wrappedPoints.forEach { (point, cell) ->
+            grid[point] = cell
         }
     }
 }
 
 fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
-
+fun Point.unapply(move: Move) = Point(x - move.dx, y - move.dy)
 
 enum class BoosterType {
     /**

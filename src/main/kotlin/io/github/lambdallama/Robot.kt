@@ -60,6 +60,10 @@ data class Robot(
         tentacles += at.reverseRotate(orientation)
     }
 
+    fun detachLastTentacle() {
+        tentacles.removeAt(tentacles.count() - 1)
+    }
+
     fun attachmentPoint(): Point {
         val last = this.tentacles.last()
         return Point(1, if (last.y > 0) -last.y else -last.y + 1).rotate(orientation)
