@@ -7,8 +7,8 @@ typealias StateFunction = (State) -> Double
 typealias ActionPolicy = (State, Robot) -> List<Action>
 
 class GreedyStateOptimizer(
-    val stateFunction: StateFunction,
-    val actionPolicy: ActionPolicy
+        val stateFunction: StateFunction,
+        val actionPolicy: ActionPolicy
 ) : Strategy {
 
     override fun run(state: State, sink: ActionSink) {
@@ -23,12 +23,12 @@ class GreedyStateOptimizer(
                 val robot = currentState.robots[robotIndex]
                 val moves = actionPolicy(currentState, robot)
                 val best = moves
-                    .map { move ->
-                        val nextState = currentState.clone()
-                        nextState.apply(nextState.robots[robotIndex], move)
-                        val q = stateFunction(nextState)
-                        q to move
-                    }.maxBy { it.first }
+                        .map { move ->
+                            val nextState = currentState.clone()
+                            nextState.apply(nextState.robots[robotIndex], move)
+                            val q = stateFunction(nextState)
+                            q to move
+                        }.maxBy { it.first }
                 println(" ${robotIndex} ${best}")
                 if (best == null) {
                     robotMoves.add(NoOp)
@@ -86,16 +86,18 @@ typealias PointPredicate = (State, Point) -> Boolean
 
 fun distanceTo(state: State, targetPointPredicate: PointPredicate): Int? {
     val grid = state.grid
-    val d = mutableMapOf<Point, Int>()
-    val q = ArrayDeque<Point>()
     var total = 0;
     for (robot in state.robots) {
+        val d = mutableMapOf<Point, Int>()
+        val q = ArrayDeque<Point>()
         d[robot.position] = 0
         q.addLast(robot.position)
+        var cellFound = false
         while (q.isNotEmpty()) {
             val u = q.removeFirst()
             if (targetPointPredicate(state, u)) {
                 total += d[u]!!
+                cellFound = true
                 break
             }
             for (move in MOVES) {
@@ -109,9 +111,11 @@ fun distanceTo(state: State, targetPointPredicate: PointPredicate): Int? {
                 }
             }
         }
-        return null
+        if (!cellFound) {
+            return null
+        }
     }
-    return null
+    return total
 }
 
 fun isWrapable(state: State, p: Point): Boolean {
@@ -123,12 +127,12 @@ fun hasTentacleBonus(state: State, p: Point): Boolean {
 }
 
 val WrapDistanceCount = GreedyStateOptimizer(
-    stateFunction = { state: State ->
-        val dw = distanceTo(state, ::isWrapable)?.toDouble() ?: 0.0
-        val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
-val dB = distanceTo(state, ::hasTentacleBonus)?.toDouble() ?: 0.0
-            val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y)
+        stateFunction = { state: State ->
+            val dw = distanceTo(state, ::isWrapable)?.toDouble() ?: 0.0
+            val nDw = dw / (state.grid.dim.x * state.grid.dim.y * state.robots.size)
+            val dB = distanceTo(state, ::hasTentacleBonus)?.toDouble() ?: 0.0
+            val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y * state.robots.size)
             wrappedCount(state) - nDw - nDb
-    },
-    actionPolicy = ::moveAndTurn
+        },
+        actionPolicy = ::moveAndTurn
 )
