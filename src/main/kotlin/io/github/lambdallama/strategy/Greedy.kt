@@ -1,7 +1,9 @@
 package io.github.lambdallama.strategy
 
+import com.google.common.collect.ComparisonChain
 import io.github.lambdallama.*
 import java.util.*
+import kotlin.math.max
 
 private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
 
@@ -65,6 +67,12 @@ interface Greedy : Strategy {
     fun follow(state: State, path: List<Point>, sink: ActionSink)
 }
 
+private fun Robot.countWrapableAt(p: Point, grid: ByteMatrix): Int {
+    val clone = this.clone()
+    clone.position = p
+    return clone.getVisibleParts(grid).count { grid[it].isWrapable }
+}
+
 object GreedyUnordered: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         for (v in path.drop(1)) {
@@ -91,7 +99,7 @@ object GreedyUnorderedTurnover: Greedy {
 
         // Find a starting rotation which maximizes number of wrapped cells per action.
         val rotation = arrayOf(null, Rotation.CLOCKWISE, Rotation.COUNTERCLOCKWISE).maxBy { candidate ->
-            var wrapped = 0
+            var wrapable = 0
             var score = 0
             val clone = state.robot.clone()
             val boosters = HashMap(state.collectedBoosters)
@@ -111,28 +119,17 @@ object GreedyUnorderedTurnover: Greedy {
                     clone.attachTentacle(clone.attachmentPoint())
                     score++
                 }
-                wrapped += clone.getVisibleParts(grid).count { grid[it].isWrapable }
+                wrapable += clone.getVisibleParts(grid).count { grid[it].isWrapable }
             }
 
-            wrapped / score.toDouble()
+            wrapable / score.toDouble()
         }
 
         if (rotation != null) {
             sink(listOf(rotation.toMove()))
             state.apply(listOf(rotation.toMove()))
         }
-        for (i in 1 until path.size) {
-            val v = path[i]
-            val move = MOVES.first { it(state.robot.position) == v }
-            sink(listOf(move))
-            state.apply(listOf<Action>(move))
-
-            if (state.hasBooster(BoosterType.B)) {
-                val attach = Attach(state.robot.attachmentPoint())
-                sink(listOf(attach))
-                state.apply(listOf<Action>(attach))
-            }
-        }
+        return GreedyUnordered.follow(state, path, sink)
     }
 }
 
@@ -169,6 +166,17 @@ fun ByteMatrix.fbPartition(): List<Set<Point>> {
 }
 
 interface GreedyFBPartition : Greedy {
+    private data class Cost(val distance: Int, val wrapable: Int) : Comparable<Cost> {
+        override fun compareTo(other: Cost) = ComparisonChain.start()
+            .compare(distance, other.distance)
+            .compare(-wrapable, -other.wrapable)
+            .result()
+    }
+
+    private fun Point.cost(state: State, distances: Map<Point, Int>): Cost {
+        return Cost(distances[this]!!, state.robot.countWrapableAt(this, state.grid))
+    }
+
     override fun route(state: State): List<Point> {
         val grid = state.grid
         val components = grid.fbPartition()
@@ -178,10 +186,10 @@ interface GreedyFBPartition : Greedy {
             else -> {
                 val distances = distanceToAll(grid, state.robot.position)
                 val closestComponent = components.minBy { component ->
-                    component.map { distances[it]!! }.max()!!
+                    component.map { it.cost(state, distances) }.max()!!
                 }!!
 
-                val closestPoint = closestComponent.minBy { distances[it]!! }!!
+                val closestPoint = closestComponent.minBy { it.cost(state, distances) }!!
                 val path = grid.bfs(state.robot.position) { it == closestPoint }
                 check(path.isNotEmpty())
                 return path

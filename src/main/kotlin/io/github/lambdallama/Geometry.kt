@@ -70,7 +70,7 @@ enum class Rotation {
     CLOCKWISE
 }
 
-data class Poly(val contour: List<Point>) {
+inline class Poly(val contour: List<Point>) {
     /** Bottom-left and top-right corners of the bounding box. */
     val bbox: Pair<Point, Point>
         get() {
