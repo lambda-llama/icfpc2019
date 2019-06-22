@@ -20,6 +20,17 @@ class ByteMatrix private constructor(
     operator fun contains(p: Point): Boolean =
         p.x >= 0 && p.y >= 0 && p.x < dim.x && p.y < dim.y
 
+    val cellCounts get(): Map<Cell, Int> {
+        val counts = HashMap<Cell, Int>()
+        for (i in 0 until numRows) {
+            for (j in 0 until numCols) {
+                val cell = get(i, j)
+                counts[cell] = (counts[cell] ?: 0) + 1
+            }
+        }
+        return counts
+    }
+
     private operator fun get(i: Int, j: Int) = Cell(buf[i * numCols + j])
 
     private operator fun set(i: Int, j: Int, value: Cell) {

@@ -21,12 +21,13 @@ fun nonInteractiveMain(
     }
 
     val solutions = arrayOf(
-        NaiveIterative,
-        GreedyUnordered,
-        GreedyUnorderedTurnover,
-        GreedyUnorderedFBPartition,
-        GreedyTurnoverFBPartition,
-        CloneFactory
+            NaiveIterative,
+            GreedyUnordered,
+            GreedyUnorderedTurnover,
+            GreedyUnorderedFBPartition,
+            GreedyTurnoverFBPartition,
+            CloneFactory,
+            WrapDistanceCount
     ).map { strategy ->
         when (strategy) {
             GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->
@@ -106,5 +107,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    GreedyUnorderedFBPartition.run(state, visualize(state, true))
+    WrapDistanceCount.run(state, visualize(state, true))
 }

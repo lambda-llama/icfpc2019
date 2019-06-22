@@ -7,7 +7,7 @@ private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
 
 val VISITED = Cell(255.toByte())
 
-val Cell.canVisit get(): Boolean = !isObstacle && this != VISITED
+private val Cell.canVisit get(): Boolean = !isObstacle && this != VISITED
 
 object Naive : Strategy {
     private fun go(grid: ByteMatrix, u: Point, sink: ActionSink) {

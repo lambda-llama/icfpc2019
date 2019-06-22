@@ -63,6 +63,11 @@ data class State(
         }
     }
 
+    val hasWrappableCells
+        get(): Boolean {
+            return (grid.cellCounts[Cell.FREE] ?: 0) > 0
+        }
+
     fun apply(actions: List<Action>) {
         require(actions.size == robots.size)
         for ((robot, action) in robots.zip(actions)) {
@@ -70,7 +75,7 @@ data class State(
         }
     }
 
-    private fun apply(robot: Robot, action: Action) {
+    fun apply(robot: Robot, action: Action) {
         val boosterType = boosters.remove(robot.position)
         if (boosterType != null) {
             if (boosterType == BoosterType.X) {
