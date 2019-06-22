@@ -107,5 +107,6 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
+    ClonePhase.run(state, visualize(state, true))
     WrapDistanceCount.run(state, visualize(state, true))
 }

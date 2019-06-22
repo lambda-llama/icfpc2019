@@ -3,7 +3,7 @@ package io.github.lambdallama.strategy
 import io.github.lambdallama.*
 import java.util.*
 
-object CloneFactory : Strategy {
+object ClonePhase: Strategy {
     override fun run(state: State, sink: ActionSink) {
         val clones = state.boosters.filter { it.value == BoosterType.C }
             .map { it.key }
@@ -25,6 +25,12 @@ object CloneFactory : Strategy {
             state.apply(actions)
             sink(actions)
         }
+    }
+}
+
+object CloneFactory : Strategy {
+    override fun run(state: State, sink: ActionSink) {
+        ClonePhase.run(state, sink)
 
         // Clone the state to capture the initial state of boosters.
         val cloneState = state.clone()
