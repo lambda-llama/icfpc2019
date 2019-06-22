@@ -60,13 +60,13 @@ data class State(
     }
 
     fun apply(action: Action) {
+        val boosterType = boosters.remove(robot.position)
+        if (boosterType != null && boosterType != BoosterType.X) {
+            collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
+        }
         when (action) {
             is Move -> {
                 robot.position = robot.position.apply(action)
-                val boosterType = boosters.remove(robot.position)
-                if (boosterType != null && boosterType != BoosterType.X) {
-                    collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
-                }
                 wrap()
             }
             is TurnClockwise -> {
