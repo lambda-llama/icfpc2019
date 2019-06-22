@@ -107,17 +107,7 @@ data class Poly(val contour: List<Point>) {
 
     companion object {
         fun parse(s: String): Poly {
-            val contour = mutableListOf<Point>()
-            var offset = 0
-            while (offset < s.length) {
-                val i = s.indexOf('(', offset)
-                val j = s.indexOf(')', i + 1)
-                contour.add(Point.parse(s.slice(i..j)))
-                offset = j + 1
-                check(offset == s.length || s[offset] == ',')
-                offset += 1
-            }
-            return Poly(contour)
+            return Poly(parseRepSepPoints(s, sep=','))
         }
     }
 }

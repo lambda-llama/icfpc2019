@@ -66,6 +66,11 @@ fun main(args: Array<String>) {
                     infoOnly = infoOnly
             )
         }
+        "--generate" -> {
+            val path = args.drop(1).firstOrNull() ?: throw IllegalStateException(
+                    "path/to/block/XX/puzzle.cond")
+            return generatorMain(path)
+        }
     }
 
     // ./gradlew run --args=path/to/prob-XXX.desc
