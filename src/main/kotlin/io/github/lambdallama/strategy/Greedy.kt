@@ -173,8 +173,9 @@ interface GreedyFBPartition : Greedy {
             .result()
     }
 
-    private fun Point.cost(state: State, distances: Map<Point, Int>): Cost {
-        return Cost(distances[this]!!, state.robot.countWrapableAt(this, state.grid))
+    private fun Point.cost(state: State, distances: Map<Point, Int>): Int {
+        //return Cost(distances[this]!!, state.robot.countWrapableAt(this, state.grid))
+        return distances[this]!!
     }
 
     override fun route(state: State): List<Point> {
@@ -199,7 +200,7 @@ interface GreedyFBPartition : Greedy {
 
     private fun distanceToAll(grid: ByteMatrix, initial: Point): Map<Point, Int> {
         val maxDistance = grid.dim.x * grid.dim.y
-        val distances = mutableMapOf<Point, Int>()
+        val distances = HashMap<Point, Int>(maxDistance)
         distances[initial] = 0
         val q = ArrayDeque<Point>()
         q.addLast(initial)

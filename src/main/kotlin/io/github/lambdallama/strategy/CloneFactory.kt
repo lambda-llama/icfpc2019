@@ -27,13 +27,17 @@ object CloneFactory : Strategy {
         }
 
         val chunks = chunkify(state.grid, state.robots.size)
-        val paths = chunks.map { chunk ->
-            val start = state.robot.position
-            val end = chunk.last()
-            val mid = chunk.dropLast(1).toMutableSet()
-            travelingSalesman(start, end, mid, state.grid)!!
+        val moves = chunks.map { chunk ->
+            val fakeState = state.clone()
+            val fakeGrid = fakeState.grid
+            for (other in chunks) {
+                if (other === chunk) continue
+                other.forEach { fakeGrid[it] = Cell.WRAPPED }
+            }
+            val moves = mutableListOf<Action>()
+            GreedyUnorderedFBPartition.run(fakeState) { moves += it.single()!! }
+            moves
         }
-        val moves = paths.map { it.toMoves() }
         check(moves.size == state.robots.size)
         val len = moves.map { it.size }.max()!!
         for (i in 0 until len) {
@@ -112,7 +116,7 @@ fun chunkify(grid: ByteMatrix, n: Int): List<List<Point>> {
         val chunk = mutableListOf<Point>()
         val seed = wrappable.first()
         for (p in bfs(seed, grid)) {
-            if (grid[p].isWrapable) {
+            if (grid[p].isWrapable && p in wrappable) {
                 wrappable.remove(p)
                 chunk.add(p)
             }

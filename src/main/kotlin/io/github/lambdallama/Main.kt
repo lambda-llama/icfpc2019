@@ -28,11 +28,23 @@ fun nonInteractiveMain(
         GreedyTurnoverFBPartition,
         CloneFactory
     ).map { strategy ->
+        when (strategy) {
+            GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->
+                if (state.grid.dim.x >= 100 || state.grid.dim.y >= 100) {
+                    return@map mutableListOf<List<Action?>>()
+                }
+            CloneFactory ->
+                // TODO(superbobry): HACK HACK HACK.
+                if ("clone" !in path) {
+                    return@map mutableListOf<List<Action?>>()
+                }
+        }
+
         val actions = mutableListOf<List<Action?>>()
         strategy.run(state.clone()) { actions.add(it) }
         System.err.println("${strategy.javaClass.simpleName}: ${actions.size}")
         actions
-    }
+    }.filter { it.isNotEmpty() }
 
     val solutionPath = path.substring(0, path.length - 5) + ".sol"
     val solutionFile = File(solutionPath)
@@ -94,5 +106,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    GreedyTurnoverFBPartition.run(state, visualize(state, false))
+    CloneFactory.run(state, visualize(state, false))
 }
