@@ -45,7 +45,7 @@ interface Greedy : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid
         sink(listOf(TurnClockwise))
-        state.apply(TurnClockwise)
+        state.apply(listOf<Action>(TurnClockwise))
         while (true) {
             check(grid[state.robot.position] == Cell.WRAPPED)
             val path = route(state)
@@ -70,11 +70,11 @@ object GreedyUnordered: Greedy {
         for (v in path.drop(1)) {
             val move = MOVES.first { it(state.robot.position) == v }
             sink(listOf(move))
-            state.apply(move)
+            state.apply(listOf(move))
             if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
                 sink(listOf(attach))
-                state.apply(attach)
+                state.apply(listOf(attach))
             }
         }
     }
@@ -119,18 +119,18 @@ object GreedyUnorderedTurnover: Greedy {
 
         if (rotation != null) {
             sink(listOf(rotation.toMove()))
-            state.apply(rotation.toMove())
+            state.apply(listOf(rotation.toMove()))
         }
         for (i in 1 until path.size) {
             val v = path[i]
             val move = MOVES.first { it(state.robot.position) == v }
             sink(listOf(move))
-            state.apply(move)
+            state.apply(listOf<Action>(move))
 
             if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
                 sink(listOf(attach))
-                state.apply(attach)
+                state.apply(listOf<Action>(attach))
             }
         }
     }

@@ -53,10 +53,6 @@ data class State(
         }
     }
 
-    fun apply(action: Action) {
-        apply(robots.first(), action)
-    }
-
     fun apply(actions: List<Action?>) {
         require(actions.size == robots.size)
         for ((robot, action) in robots.zip(actions)) {
