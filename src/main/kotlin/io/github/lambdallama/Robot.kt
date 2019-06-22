@@ -75,8 +75,10 @@ data class Robot(var position: Point,
         require(this.boosters[BoosterType.B]!! > 0)
         this.boosters[BoosterType.B] = this.boosters[BoosterType.B]!! - 1
         val last = this.tentacles.last()
-        val newTentacle = Point(1, if (last.y > 0) -last.y else -last.y + 1).rotate(this.orientation)
+        val newTentacle = Point(1, if (last.y > 0) -last.y else -last.y + 1)
         this.tentacles.add(newTentacle)
-        return newTentacle
+        // TODO: this orientation is needed for the result, but is not needed for the UI
+        // TODO: THE UI WILL BE DRAWN INCORRECTLY :(
+        return newTentacle.rotate(this.orientation)
     }
 }
