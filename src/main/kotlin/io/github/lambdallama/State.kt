@@ -18,7 +18,17 @@ data class State(
 
     val robot get(): Robot = robots.first()
 
-    fun clone() = State(grid.clone(), HashMap(boosters), robots.map { it.clone() }.toMutableList())
+    fun clone() = State(
+        grid.clone(),
+        HashMap(boosters),
+        robots.map { it.clone() }.toMutableList(),
+        collectedBoosters.toMutableMap())
+
+    fun fakeClone(idx: Int) = State(
+        grid.clone(),
+        boosters,  // SHARE.
+        mutableListOf(robots[idx]),
+        collectedBoosters)  // SHARE.
 
     companion object {
         fun parse(s: String): State {
@@ -116,6 +126,7 @@ data class State(
 
     private fun wrap() {
         robots.forEach { robot ->
+            check(!grid[robot.position].isObstacle)
             robot.getVisibleParts(grid).forEach { p ->
                 if (grid[p].isWrapable) {
                     grid[p] = Cell.WRAPPED

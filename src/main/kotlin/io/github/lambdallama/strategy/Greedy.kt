@@ -3,7 +3,6 @@ package io.github.lambdallama.strategy
 import com.google.common.collect.ComparisonChain
 import io.github.lambdallama.*
 import java.util.*
-import kotlin.math.max
 
 private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
 
@@ -173,9 +172,8 @@ interface GreedyFBPartition : Greedy {
             .result()
     }
 
-    private fun Point.cost(state: State, distances: Map<Point, Int>): Int {
-        //return Cost(distances[this]!!, state.robot.countWrapableAt(this, state.grid))
-        return distances[this]!!
+    private fun Point.cost(state: State, distances: Map<Point, Int>): Cost {
+        return Cost(distances[this]!!, state.robot.countWrapableAt(this, state.grid))
     }
 
     override fun route(state: State): List<Point> {

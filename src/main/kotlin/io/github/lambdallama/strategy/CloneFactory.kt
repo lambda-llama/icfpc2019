@@ -27,8 +27,8 @@ object CloneFactory : Strategy {
         }
 
         val chunks = chunkify(state.grid, state.robots.size)
-        val moves = chunks.map { chunk ->
-            val fakeState = state.clone()
+        val moves = chunks.withIndex().map { (idx, chunk) ->
+            val fakeState = state.fakeClone(idx)
             val fakeGrid = fakeState.grid
             for (other in chunks) {
                 if (other === chunk) continue
