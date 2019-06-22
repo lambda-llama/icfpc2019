@@ -58,7 +58,7 @@ data class State(
                 robot.position = robot.position.apply(action)
                 val boosterType = boosters.remove(robot.position)
                 if (boosterType != null && boosterType != BoosterType.X) {
-                    robot.boosters[boosterType] = robot.boosters[boosterType]!! +1
+                    robot.boosters[boosterType] = robot.boosters[boosterType]!! + 1
                 }
                 wrap()
             }
@@ -74,7 +74,11 @@ data class State(
                 val n = robot.boosters[BoosterType.B]!!
                 check(n > 0)
                 robot.boosters[BoosterType.B] = n - 1
-                robot.attachTentacle((action.location))
+                check(
+                    robot.tentacles.map { it.rotate(robot.orientation) }
+                        .map { it.manhattanDist(action.location) }.min()!! == 1
+                )
+                robot.attachTentacle(action.location)
                 wrap()
             }
         }

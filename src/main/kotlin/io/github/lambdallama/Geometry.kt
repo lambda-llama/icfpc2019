@@ -1,6 +1,7 @@
 package io.github.lambdallama
 
 import com.google.common.collect.ArrayListMultimap
+import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 
@@ -17,6 +18,9 @@ data class Point(val x: Int, val y: Int) {
     operator fun plus(other: Point): Point = Point(x + other.x, y + other.y)
     operator fun minus(other: Point): Point = Point(x - other.x, y - other.y)
     operator fun times(other: Point): Int = x * other.x + y * other.y
+
+    fun manhattanDist(other: Point): Int =
+        (x - other.x).absoluteValue + (y - other.y).absoluteValue
 
     fun rotate(orientation: Orientation) = Point(
             orientation.ax * this,
