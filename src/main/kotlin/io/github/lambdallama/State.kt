@@ -3,8 +3,8 @@ package io.github.lambdallama
 import kotlin.math.*
 
 data class State(
-    var grid: ByteMatrix,
-    var robot: Robot
+    val grid: ByteMatrix,
+    val robot: Robot
 ) {
     val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
 
