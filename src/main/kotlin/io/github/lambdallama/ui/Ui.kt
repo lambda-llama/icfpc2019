@@ -25,7 +25,7 @@ fun draw(newMap: Map, action: String? = null) {
     }
 }
 
-private const val frameLenMs = 300
+private const val frameLenMs = 8
 
 fun visualize(initialState: State, step: Boolean = false): ActionSink {
     val state = initialState.clone()
@@ -50,31 +50,28 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
 private fun now(): Long = System.currentTimeMillis()
 
 private fun State.toMap(): Map {
-    val pills = mutableListOf<Pair<Point, Pill>>()
     return Map(grid.dim,
         { p ->
             val c = grid[p]
-            if (robot.getVisibleParts(grid).contains(p)) {
-                pills += p to Pill.ROBOT
-            }
             when (c) {
                 Cell.OBSTACLE -> UiCell.WALL
                 Cell.OBSTACLE -> UiCell.WALL
                 Cell.FREE -> UiCell.FREE
                 Cell.WRAPPED -> UiCell.WRAPPED
                 Cell.VOID -> UiCell.VOID
-                else -> {
-                    when (c) {
-                        Cell.B_EXTENSION -> pills += p to Pill.BOOST_B
-                        Cell.B_DRILL -> pills += p to Pill.BOOST_L
-                        Cell.B_FAST_WHEELS -> pills += p to Pill.BOOST_F
-                        Cell.SPAWN_POINT -> pills += p to Pill.BOOST_X
-                    }
-                    UiCell.FREE
-                }
+                else -> error("bad cell")
             }
 
-        }, pills)
+        }, robot.getVisibleParts(grid).map { it to Pill.ROBOT } + boosters.map { it.key to it.value.toPill() })
+}
+
+fun BoosterType.toPill(): Pill = when (this) {
+    BoosterType.B -> Pill.BOOST_B
+    BoosterType.F -> Pill.BOOST_F
+    BoosterType.L -> Pill.BOOST_L
+    BoosterType.X -> Pill.BOOST_X
+    BoosterType.R -> Pill.BOOST_R
+    BoosterType.C -> Pill.BOOST_C
 }
 
 
@@ -96,6 +93,8 @@ inline class Pill(private val value: Byte) {
         val BOOST_L = Pill(3)
         val BOOST_X = Pill(4)
         val BOOST_T = Pill(5)
+        val BOOST_R = Pill(6)
+        val BOOST_C = Pill(7)
     }
 }
 
@@ -223,6 +222,8 @@ private class Canvas(val viewState: ViewState, val frameSize: () -> Dimension) :
                 Pill.BOOST_L -> Color.GREEN
                 Pill.BOOST_X -> Color.BLUE
                 Pill.BOOST_T -> Color.MAGENTA
+                Pill.BOOST_R -> Color.CYAN
+                Pill.BOOST_C -> Color.ORANGE
                 else -> error("bad pill")
             }
             g.color = color

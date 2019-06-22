@@ -28,7 +28,7 @@ interface Greedy : Strategy {
         val grid = state.grid
         for (v in path.drop(1)) {
             sink(MOVES.first { it(state.robot.position) == v })
-            state.robot.move(grid, v)
+            state.robot.move(grid, state.boosters, v)
             if (state.robot.boosters[BoosterType.B]!! > 0) {
                 sink(Attach(state.robot.extendReach()))
             }
@@ -109,9 +109,9 @@ object GreedySMFTurnover: Greedy {
                 val v = path[i]
                 clone.position = v  // .move is mutating!
                 score++
-                if (grid[v].isBooster) {
-                    val type = BoosterType.fromCell(grid[v])
-                    clone.boosters[type] = clone.boosters[type]!! + 1
+                val boosterType = state.boosters[v]
+                if (boosterType != null && boosterType != BoosterType.X) {
+                    clone.boosters[boosterType] = clone.boosters[boosterType]!! + 1
                 }
                 if (state.robot.boosters[BoosterType.B]!! > 0) {
                     clone.extendReach()
@@ -130,7 +130,7 @@ object GreedySMFTurnover: Greedy {
         for (i in 1 until path.size) {
             val v = path[i]
             sink(MOVES.first { it(state.robot.position) == v })
-            state.robot.move(grid, v)
+            state.robot.move(grid, state.boosters, v)
             if (state.robot.boosters[BoosterType.B]!! > 0) {
                 sink(Attach(state.robot.extendReach()))
             }

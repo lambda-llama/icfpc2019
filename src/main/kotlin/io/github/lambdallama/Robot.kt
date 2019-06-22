@@ -15,18 +15,17 @@ data class Robot(var position: Point,
 
     fun clone() = Robot(position, tentacles.toMutableList(), orientation)
 
-    fun move(grid: ByteMatrix, position: Point) {
+    fun move(grid: ByteMatrix, boosters: MutableMap<Point, BoosterType>, position: Point) {
         require(position in grid)
         val cell = grid[position]
         require(cell != Cell.OBSTACLE && cell != Cell.VOID)
         val d = this.position - position
         require(d.x == 0 && abs(d.y) == 1 || abs(d.x) == 1 && d.y == 0)
         this.position = position
-
-        if (cell.isBooster) {
-            val type = BoosterType.fromCell(cell)
-            this.boosters[type] = this.boosters[type]!! + 1
-            grid[position] = Cell.FREE
+        boosters.remove(position)?.let { boosterType ->
+            if (boosterType != BoosterType.X) {
+                this.boosters[boosterType] = this.boosters[boosterType]!! + 1
+            }
         }
     }
 
@@ -47,9 +46,9 @@ data class Robot(var position: Point,
         //  WR
 
         val parts =
-                tentacles.map { tentacle ->
-                    tentacle.rotate(orientation) + position
-                }
+            tentacles.map { tentacle ->
+                tentacle.rotate(orientation) + position
+            }
 
         var idx = 0
         var hitWall = mutableListOf(false, false)
@@ -58,7 +57,7 @@ data class Robot(var position: Point,
             val wall = p !in grid || grid[p].isObstacle
             val pr = p + robotDelta
             val robotLevelWall = pr !in grid || grid[pr].isObstacle
-             if (idx > 0) {
+            if (idx > 0) {
                 hitWall[idx % 2] = hitWall[idx % 2] || wall || robotLevelWall
             }
             val result = !wall && (idx < 3 || !hitWall[idx % 2])

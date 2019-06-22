@@ -4,11 +4,12 @@ import kotlin.math.*
 
 data class State(
     val grid: ByteMatrix,
+    val boosters: MutableMap<Point, BoosterType>,
     val robot: Robot
 ) {
     val maxPoints: Int = ceil(1000 * log2((grid.dim.x * grid.dim.y).toDouble())).toInt()
 
-    fun clone() = State(grid.clone(), robot.clone())
+    fun clone() = State(grid.clone(), HashMap(boosters), robot.clone())
 
     companion object {
         fun parse(s: String): State {
@@ -34,12 +35,10 @@ data class State(
             val grid = ByteMatrix(numRows, numCols, Cell.VOID)
             listOf(map).project(grid, Cell.FREE)
             obstacles.project(grid, Cell.OBSTACLE)
-            for (booster in boosters) {
-                grid[booster.loc] = booster.type.toCell()
-            }
 
             return State(
                 grid,
+                boosters.map { it.loc to it.type }.toMap(HashMap()),
                 robot = Robot(
                     position = initialLoc,
                     tentacles = mutableListOf(
@@ -82,26 +81,6 @@ fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
 enum class BoosterType {
     B, F, L, X, R, C;
     // TODO: X is not a booster, it's a static spawn point
-
-    fun toCell(): Cell = when (this) {
-        B -> Cell.B_EXTENSION
-        F -> Cell.B_FAST_WHEELS
-        L -> Cell.B_DRILL
-        X -> Cell.SPAWN_POINT
-        R -> Cell.B_TELEPORT
-        C -> Cell.B_CLONE
-    }
-
-    companion object {
-        fun fromCell(c: Cell): BoosterType = when (c) {
-            Cell.B_EXTENSION -> B
-            Cell.B_FAST_WHEELS -> F
-            Cell.B_DRILL -> L
-            Cell.B_TELEPORT -> R
-            Cell.B_CLONE -> C
-            else -> throw Exception("Invalid Cell $c")
-        }
-    }
 }
 
 data class Booster(
@@ -116,33 +95,23 @@ data class Booster(
 }
 
 inline class Cell(val byte: Byte) {
-    val isObstacle: Boolean get() = when (this) {
-        OBSTACLE, VOID -> true
-        else -> false
-    }
+    val isObstacle: Boolean
+        get() = when (this) {
+            OBSTACLE, VOID -> true
+            else -> false
+        }
 
-    val isWrapable: Boolean get() = when (this) {
-        OBSTACLE, VOID, WRAPPED -> false
-        else -> true
-    }
-
-    val isBooster: Boolean get() = when (this) {
-        B_EXTENSION, B_FAST_WHEELS, B_DRILL, B_TELEPORT, B_CLONE -> true
-        else -> false
-    }
+    val isWrapable: Boolean
+        get() = when (this) {
+            OBSTACLE, VOID, WRAPPED -> false
+            else -> true
+        }
 
     companion object {
         val OBSTACLE = Cell('O'.toByte())
+        val VOID = Cell('V'.toByte())
         val WRAPPED = Cell('W'.toByte())
         val FREE = Cell(' '.toByte())
-        val VOID = Cell('V'.toByte())
-        val SPAWN_POINT: Cell get() = Cell('X'.toByte())
-
-        val B_EXTENSION: Cell get() = Cell('B'.toByte())
-        val B_FAST_WHEELS: Cell get() = Cell('F'.toByte())
-        val B_DRILL: Cell get() = Cell('L'.toByte())
-        val B_TELEPORT: Cell get() = Cell('T'.toByte())
-        val B_CLONE: Cell get() = Cell('C'.toByte())
     }
 }
 
