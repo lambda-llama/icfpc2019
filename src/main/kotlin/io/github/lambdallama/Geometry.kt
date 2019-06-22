@@ -7,6 +7,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 
+/*
 inline class Point(val xy: Long) {
     val x: Int get() = (xy ushr 32).toInt()
     val y: Int get() = xy.toInt()
@@ -35,7 +36,33 @@ inline class Point(val xy: Long) {
         }
 
         operator fun invoke(x: Int, y: Int): Point {
-            return Point(x.toLong() shl 32 or (y.toLong() and 0xffffffffL))
+            val p = Point(x.toLong() shl 32 or (y.toLong() and 0xffffffffL))
+            check(p.x == x && p.y == y)
+            return p
+        }
+    }
+}
+*/
+
+data class Point(val x: Int, val y: Int) {
+    operator fun plus(other: Point): Point = Point(x + other.x, y + other.y)
+    operator fun minus(other: Point): Point = Point(x - other.x, y - other.y)
+    operator fun times(other: Point): Int = x * other.x + y * other.y
+
+    fun manhattanDist(other: Point): Int =
+        (x - other.x).absoluteValue + (y - other.y).absoluteValue
+
+    fun rotate(orientation: Orientation) = Point(orientation.ax * this, orientation.ay * this)
+
+    fun reverseRotate(orientation: Orientation) = rotate(orientation.opposite)
+
+    override fun toString() = "($x,$y)"
+
+    companion object {
+        fun parse(s: String): Point {
+            check(s.first() == '(' && s.last() == ')')
+            val (x, y) = s.slice(1 until s.length - 1).split(',', limit = 2)
+            return Point(x.toInt(), y.toInt())
         }
     }
 }
