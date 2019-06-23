@@ -1,1 +1,1 @@
-{"Phases<CloneExtenderPhase, GreedyStateOptimizer>":10696,"Weighted":10457,"bestTime":10457}
+{"CloneFactory":11623,"GreedyTurnoverFBPartition":10262,"GreedyUnordered":11839,"GreedyUnorderedFBPartition":10070,"GreedyUnorderedTurnover":11508,"NaiveIterative":29022,"Phases<CloneExtenderPhase, GreedyStateOptimizer>":10696,"Phases<ClonePhase, GreedyStateOptimizer>":11122,"Phases<ExtenderPhase, GreedyUnorderedFBPartition>":9995,"Weighted":10457,"WeightedAccelerated":10170,"bestTime":9995}
