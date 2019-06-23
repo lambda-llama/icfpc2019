@@ -92,8 +92,8 @@ fun distance(state: State, from: Robot, targetPointPredicate: PointPredicate): I
             val v = move(u)
             if (v in grid && !grid[v].isObstacle) {
                 var du = d[u]!! + 1
-                if (d.getOrDefault(v, Int.MAX_VALUE) > du + 1) {
-                    d[v] = du + 1
+                if (d.getOrDefault(v, Int.MAX_VALUE) > du) {
+                    d[v] = du
                     q.addLast(v)
                 }
             }
