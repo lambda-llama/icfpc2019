@@ -19,7 +19,7 @@ data class State(
     val grid: ByteMatrix,
     val boosters: MutableMap<Point, BoosterType>,
     val robots: MutableList<Robot>,
-    val teleports: MutableList<Point>,
+    val beacons: MutableList<Point>,
     val collectedBoosters: MutableMap<BoosterType, Int> = mutableMapOf(
         BoosterType.B to 0,
         BoosterType.F to 0,
@@ -36,14 +36,14 @@ data class State(
         grid.clone(),
         HashMap(boosters),
         robots.map { it.clone() }.toMutableList(),
-        teleports.toMutableList(),
+        beacons.toMutableList(),
         collectedBoosters.toMutableMap())
 
     fun fakeClone(idx: Int) = State(
         grid.clone(),
         boosters,  // SHARE.
         mutableListOf(robots[idx].clone()),
-        teleports,  // SHARE.
+        beacons,  // SHARE.
         collectedBoosters)  // SHARE.
 
     companion object {
@@ -74,7 +74,7 @@ data class State(
             return State(
                 grid,
                 boosters.map { it.loc to it.type }.toMap(HashMap()),
-                teleports = mutableListOf(),
+                beacons = mutableListOf(),
                 robots = mutableListOf(Robot(initialLoc))
             ).apply { wrap() }
         }
@@ -155,16 +155,16 @@ data class State(
                 reverseAction.wrappedPoints = wrap()
             }
             is InstallBeacon -> {
-                check(boosters[robot.position] == BoosterType.X) {
+                check(boosters[robot.position] != BoosterType.X) {
                     "${boosters[robot.position]} ${robot.position} $boosters"
                 }
                 val n = collectedBoosters[BoosterType.R]!!
                 check(n > 0)
                 collectedBoosters[BoosterType.R] = n - 1
-                teleports += robot.position
+                beacons += robot.position
             }
             is Teleport -> {
-                check(action.location in teleports)
+                check(action.location in beacons)
                 reverseAction.teleportedFrom = robot.position
                 robot.position = action.location
                 reverseAction.wrappedPoints = wrap()
@@ -221,7 +221,7 @@ data class State(
             }
             is InstallBeacon -> {
                 collectedBoosters[BoosterType.R] = collectedBoosters[BoosterType.R]!! + 1
-                teleports.remove(robot.position)
+                beacons.remove(robot.position)
             }
             is Teleport -> {
                 robot.position = reverseAction.teleportedFrom

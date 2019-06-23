@@ -37,6 +37,8 @@ class PointSet(private val dim: Point) {
 
     fun add(p: Point) = buf.set(p.y * dim.x + p.x)
 
+    fun remove(p: Point) = buf.clear(p.y * dim.x + p.x)
+
     operator fun contains(p: Point) = buf.get(p.y * dim.x + p.x)
 
     fun asSequence(): Sequence<Point> {
@@ -52,6 +54,9 @@ class PointSet(private val dim: Point) {
             }
         }
     }
+
+    fun isEmpty() = buf.isEmpty
+    fun isNotEmpty() = !isEmpty()
 }
 
 class PointDeque(capacity: Int = 4) {

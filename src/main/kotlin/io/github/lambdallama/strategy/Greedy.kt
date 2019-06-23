@@ -4,9 +4,7 @@ import com.google.common.collect.ComparisonChain
 import io.github.lambdallama.*
 import java.util.*
 
-private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
-
-private inline fun ByteMatrix.bfs(
+private inline fun State.bfs(
     initial: Point,
     shouldStop: (Point) -> Boolean): List<Point> {
     val backtrack = mutableMapOf<Point, Point?>(initial to null)
@@ -19,9 +17,8 @@ private inline fun ByteMatrix.bfs(
             break
         }
 
-        for (move in MOVES) {
-            val v = move(u)
-            if (v in this && !this[v].isObstacle && v !in backtrack) {
+        forEachReachable(u) {v ->
+            if (v !in backtrack) {
                 q.addLast(v)
                 backtrack[v] = u
             }
@@ -60,7 +57,7 @@ interface Greedy : Strategy {
 
     fun route(state: State): List<Point> {
         val grid = state.grid
-        return grid.bfs(state.robot.position) { grid[it].isWrapable }
+        return state.bfs(state.robot.position) { grid[it] == Cell.FREE }
     }
 
     fun follow(state: State, path: List<Point>, sink: ActionSink)
@@ -69,15 +66,15 @@ interface Greedy : Strategy {
 private fun Robot.countWrapableAt(p: Point, grid: ByteMatrix): Int {
     val clone = this.clone()
     clone.position = p
-    return clone.getVisibleParts(grid).count { grid[it].isWrapable }
+    return clone.getVisibleParts(grid).count { grid[it] == Cell.FREE }
 }
 
 object GreedyUnordered: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         for (v in path.drop(1)) {
-            val move = MOVES.first { it(state.robot.position) == v }
-            sink(listOf(move))
-            state.apply(listOf(move))
+            val action = state.howTo(v)!!
+            sink(listOf(action))
+            state.apply(listOf(action))
             if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
                 sink(listOf(attach))
@@ -118,7 +115,7 @@ object GreedyUnorderedTurnover: Greedy {
                     clone.attachTentacle(clone.attachmentPoint())
                     score++
                 }
-                wrapable += clone.getVisibleParts(grid).count { grid[it].isWrapable }
+                wrapable += clone.getVisibleParts(grid).count { grid[it] == Cell.FREE }
             }
 
             wrapable / score.toDouble()
@@ -139,18 +136,16 @@ fun ByteMatrix.fbPartition(): List<PointSet> {
     for (x in 0 until dim.x) {
         for (y in 0 until dim.y) {
             val initial = Point(x, y)
-            if (initial !in seen
-                && !this[initial].isObstacle && this[initial] != Cell.WRAPPED) {
+            if (initial !in seen && this[initial] == Cell.FREE) {
                 val component = PointSet(dim)
                 component.add(initial)
                 val q = PointDeque()
                 q.addLast(initial)
                 while (q.isNotEmpty()) {
                     val u = q.removeLast()
-                    for (move in MOVES) {
+                    for (move in Move.ALL) {
                         val v = move(u)
-                        if (v in this && v !in seen
-                            && !this[v].isObstacle && this[v] != Cell.WRAPPED) {
+                        if (v in this && v !in seen && this[v] == Cell.FREE) {
                             q.addLast(v)
                             component.add(v)
                             seen.add(v)
@@ -184,7 +179,7 @@ interface GreedyFBPartition : Greedy {
             0 -> emptyList()
             1 -> super.route(state)
             else -> {
-                val distances = distanceToAll(grid, state.robot.position)
+                val distances = distanceToAll(state, state.robot.position)
                 // XXX minBy/max calls bellow are sensitive to point
                 //     order within a component due to collisions!
                 val closestComponent = components.minBy { component ->
@@ -192,34 +187,47 @@ interface GreedyFBPartition : Greedy {
                 }!!
 
                 val closestPoint = closestComponent.asSequence().minBy { it.cost(state, distances) }!!
-                val path = grid.bfs(state.robot.position) { it == closestPoint }
+                val path = state.bfs(state.robot.position) { it == closestPoint }
                 check(path.isNotEmpty())
                 return path
             }
         }
     }
+}
 
-    private fun distanceToAll(grid: ByteMatrix, initial: Point): PointIntMap {
-        val maxDistance = grid.dim.x * grid.dim.y
-        val distances = PointIntMap(grid.dim)
-        distances[initial] = 0
-        val q = PointDeque()
-        q.addLast(initial)
-        while (q.isNotEmpty()) {
-            val u = q.removeFirst()
-            for (move in MOVES) {
-                val v = move(u)
-                if (v in grid && !grid[v].isObstacle) {
-                    val alternative = distances[u] + 1
-                    if (alternative < distances.getOrDefault(v, maxDistance)) {
-                        distances[v] = alternative
-                        q.addLast(v)
-                    }
-                }
+private fun State.howTo(v: Point): Action? {
+    val u = robot.position
+    if (v in beacons) return Teleport(v)
+    return Move.ALL.firstOrNull { it(u) == v }
+}
+
+private inline fun State.forEachReachable(u: Point, block: (Point) -> Unit) {
+    beacons.forEach(block)
+    for (move in Move.ALL) {
+        val v = move(u)
+        if (v in grid && !grid[v].isObstacle) {
+            block(v)
+        }
+    }
+}
+
+private fun distanceToAll(state: State, initial: Point): PointIntMap {
+    val grid = state.grid
+    val distances = PointIntMap(grid.dim)
+    distances[initial] = 0
+    val q = PointDeque()
+    q.addLast(initial)
+    while (q.isNotEmpty()) {
+        val u = q.removeFirst()
+        state.forEachReachable(u) { v ->
+            val alternative = distances[u] + 1
+            if (alternative < distances.getOrDefault(v, Int.MAX_VALUE)) {
+                distances[v] = alternative
+                q.addLast(v)
             }
         }
-        return distances
     }
+    return distances
 }
 
 object GreedyUnorderedFBPartition : GreedyFBPartition {
@@ -231,5 +239,50 @@ object GreedyUnorderedFBPartition : GreedyFBPartition {
 object GreedyTurnoverFBPartition : GreedyFBPartition {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         return GreedyUnorderedTurnover.follow(state, path, sink)
+    }
+}
+
+object InstallUniformBeacons : Strategy {
+    override fun run(state: State, sink: ActionSink) {
+        val teleports = state.boosters.filterValues { it == BoosterType.R }.keys
+        if (teleports.isNotEmpty()) {
+            val grid = state.grid
+            val distances = distanceToAll(state, state.robot.position)
+            val targets = chunkify(grid, teleports.size).map { chunk ->
+                val d = IntArray(chunk.size) { distances[chunk[it]] }
+                d.sort()  // Poorman's median.
+                val median = d[d.size / 2]
+                chunk.first { distances[it] == median }
+            }
+            check(targets.none { BoosterType.X == state.boosters[it] })
+            check(targets.size == teleports.size)
+
+            installBeacons(state, teleports, targets, sink)
+        }
+    }
+
+    private fun installBeacons(state: State, teleports: Set<Point>, targets: List<Point>, sink: ActionSink) {
+        val grid = state.grid
+        var installed = 0
+        val q = PointSet(grid.dim)
+        teleports.forEach(q::add)
+        while (q.isNotEmpty()) {
+            val distances = distanceToAll(state, state.robot.position)
+            val closest = q.asSequence().minBy { distances[it] }!!
+            if (closest in teleports) {
+                val path = state.bfs(state.robot.position) { it == closest }
+                check(path.isNotEmpty())
+                GreedyUnordered.follow(state, path, sink)
+                q.add(targets[installed++])
+            } else {  // closest in targets.
+                val path = state.bfs(state.robot.position) { it == closest }
+                check(path.isNotEmpty())
+                GreedyUnordered.follow(state, path, sink)
+                state.apply(listOf(InstallBeacon))
+                sink(listOf(InstallBeacon))
+            }
+
+            q.remove(closest)
+        }
     }
 }

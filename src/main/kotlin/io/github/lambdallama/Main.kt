@@ -31,8 +31,10 @@ fun nonInteractiveMain(
             GreedyUnordered,
             GreedyUnorderedTurnover,
             GreedyUnorderedFBPartition,
+            phases(InstallUniformBeacons, GreedyUnorderedFBPartition),
             phases(ExtenderPhase, GreedyUnorderedFBPartition),
             GreedyTurnoverFBPartition,
+            phases(InstallUniformBeacons, GreedyTurnoverFBPartition),
             CloneFactory,
             phases(ClonePhase, WrapDistanceCount),
             phases(CloneExtenderPhase, WrapDistanceCount),
@@ -177,5 +179,9 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    WrapDistanceCount.run(state, visualize(state, true))
+    val s = phases(
+        InstallUniformBeacons,
+        GreedyUnorderedFBPartition)
+//    val s = InstallUniformBeacons
+    s.run(state, visualize(state, false))
 }
