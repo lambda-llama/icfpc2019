@@ -172,20 +172,21 @@ fun inComponent(s: State, p: Point): Boolean {
 }
 
 
-private object UnwrappedComponents {
+data class ComponentInfo(
+    var id: Int,
+    var size: Int, var robot: Robot?,
+    var farawayPoint: Point?, var farawayDist: Int,
+    var points: List<Point>
+)
 
-    data class ComponentInfo(
-        var id: Int,
-        var size: Int, var robot: Robot?,
-        var farawayPoint: Point?, var farawayDist: Int
-    )
+private object UnwrappedComponents {
 
     private val cellComponent = HashMap<Point, Int>()
     private val d = HashMap<Point, Int>()
     private val parent = HashMap<Point, Point?>()
     private val robotComponents = HashMap<Int, MutableList<Int>>()
-    private var componentInfo = arrayOf<ComponentInfo>()
-
+    private var componentInfo = mutableListOf<ComponentInfo>()
+    private var robotLocalPoints = HashMap<Int, List<Point>>()
 
     fun getRobotComponents(robot: Robot): List<ComponentInfo> {
         val componentInds = robotComponents[robot.id]!!
@@ -196,11 +197,14 @@ private object UnwrappedComponents {
         return cellComponent[p] ?: -1
     }
 
+    fun getRobotLocalPoints(robot: Robot) = robotLocalPoints[robot.id]!!
+
     fun updateState(state: State) {
         val grid = state.grid
         d.clear()
         cellComponent.clear()
-        var componentsCount = 0
+        componentInfo.clear()
+        var componentsCount =  0
         for (x in 0 until grid.dim.x) {
             for (y in 0 until grid.dim.y) {
                 val p = Point(x, y)
@@ -212,6 +216,14 @@ private object UnwrappedComponents {
                 for (q in component) {
                     cellComponent[q] = componentsCount
                 }
+                componentInfo.add(
+                    ComponentInfo(
+                        id = componentsCount,
+                        size = 0, robot = null,
+                        farawayPoint = null, farawayDist = 0,
+                        points = component
+                    )
+                )
                 componentsCount += 1
             }
         }
@@ -226,14 +238,6 @@ private object UnwrappedComponents {
             dist = d, canVisit = ::accessibleOnMap,
             onDistanceUpdate = { from, to -> parent[to] = parent[from] }
         )
-        componentInfo = Array(componentsCount) { id ->
-            ComponentInfo(
-                id = id,
-                size = 0, robot = null,
-                farawayPoint = null, farawayDist = 0
-            )
-        }
-
         for ((p, cInd) in cellComponent) {
             val info = componentInfo[cInd]
             val dist = d[p]!!
@@ -257,12 +261,23 @@ private object UnwrappedComponents {
                 }
             }
         }
+
+        robotLocalPoints.clear()
+        for (robot in state.robots) {
+            robotLocalPoints[robot.id] = robot.pointsOfInterest(state)
+        }
     }
 }
 
-fun componentSize(state: State, point: Point): Int {
-    val d = HashMap<Point, Int>()
-    return bfs(state, from = listOf(point), canVisit = ::inComponent, dist = d).size
+fun componentSize(state: State, component: ComponentInfo, robot: Robot): Int {
+    var count = 0;
+    for (p in UnwrappedComponents.getRobotLocalPoints(robot)) {
+        if (UnwrappedComponents.getComponentId(p) == component.id &&
+            state.grid[p] == Cell.FREE) {
+            count += 1
+        }
+    }
+    return count
 }
 
 fun companentBasedCost(state: State, robot: Robot): Double {
@@ -290,8 +305,9 @@ fun companentBasedCost(state: State, robot: Robot): Double {
             canVisit = ::accessibleOnMap
         )?.toDouble() ?: 0.0
         val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
+        val componentLocalSize = componentSize(state, component, robot)
 
-        return -componentSize(state, component.farawayPoint!!) - nDw
+        return  -componentLocalSize - nDw
     }
 }
 

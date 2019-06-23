@@ -68,4 +68,18 @@ data class Robot(
         val x = this.tentacles.map { it.x }.max()!!
         return Point(x + 1, 0).rotate(orientation)
     }
+
+    fun pointsOfInterest(state: State): List<Point> {
+        val delta = tentacles.size + 5
+        val pointsOfInterest = mutableListOf<Point>()
+        for (x in position.x - delta .. position.x + delta) {
+            for (y in position.y - delta .. position.y + delta) {
+                val p = Point(x, y)
+                if (p in state.grid) {
+                    pointsOfInterest.add(p)
+                }
+            }
+        }
+        return pointsOfInterest
+    }
 }
