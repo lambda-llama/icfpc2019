@@ -46,9 +46,9 @@ private val MOVES = ACTIONS.filterIsInstance<Move>()
 private const val DEPTH = 3
 private const val EXTENDER_PICKUP_SCORE = 1000
 private const val ACCELERATION_PICKUP_SCORE = 500
-private const val DEFAULT_CELL_WEIGHT: Byte = 10
-private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 100
-private const val CELL_WEIGHT_DECAY = 0.9
+private const val DEFAULT_CELL_WEIGHT: Byte = 1
+private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 25
+private const val CELL_WEIGHT_DECAY = 0.4
 private const val PREPROCESS_PASS_COUNT = 10
 
 open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
@@ -187,7 +187,8 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
                 if (state.grid[u].isWrapable) {
                     wrapableCellsLeft++
                     if (state.grid.freeNeighbours(u).count() < 4) {
-                        weights[u] = Cell(BORDER_CELL_INITIAL_WEIGHT)
+                        val bordersCount = 4 - state.grid.freeNeighbours(u).count()
+                        weights[u] = Cell((BORDER_CELL_INITIAL_WEIGHT * bordersCount).toByte())
                     }
                 }
             }
