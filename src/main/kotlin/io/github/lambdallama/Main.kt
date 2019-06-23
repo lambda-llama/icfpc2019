@@ -48,10 +48,14 @@ fun nonInteractiveMain(
         val name = strategy.name
         val actions = mutableListOf<List<Action>>()
         val sw = Stopwatch.createStarted()
-        strategy.run(state.clone()) { actions.add(it) }
+        try {
+            strategy.run(state.clone()) { actions.add(it) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            actions.clear()
+        }
         sw.stop()
-        println("$name: ${actions.size}" +
-            " (${sw.toFormattedString()})")
+        println("$name: ${actions.size} (${sw.toFormattedString()})")
         Triple(name, actions.size, actions)
     }.filter { it.second != 0 }
 
