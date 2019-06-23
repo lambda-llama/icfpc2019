@@ -30,38 +30,30 @@ data class Robot(
     fun getVisibleParts(grid: ByteMatrix) = getVisiblePartsAt(grid, position)
 
     fun getVisiblePartsAt(grid: ByteMatrix, position: Point): Sequence<Point> {
-        // TODO: this is a quick, dirty visibility check with false negatives
-        // 31024 <- tentacle indices, the algorithm depends on this order
+        // TODO: this is a quicker, dirtier visibility check
+        //   4
+        //   3
+        //  102 <- tentacle indices, the algorithm depends on this order
         //   R
-        // For each direction, if we encounter a wall on either the tentacles' level or robot level,
-        // consider the rest of the tentacles in that direction to be invisible.
-        // Tentacles 0-2 are checked in a normal way.
-        //
-        // Example:
-        // 310W4 <- here only 0 and 1 are visible, since
-        //  WR
-        if (tentacles.none { it !in grid || grid[it].isObstacle }) {
-            return sequenceOf(position) + tentacles
+
+        val res = mutableListOf<Point>()
+        res += position
+        var p = tentacles[1].rotate(orientation) + position
+        if (p in grid && !grid[p].isObstacle) {
+            res += p
+        }
+        p = tentacles[2].rotate(orientation) + position
+        if (p in grid && !grid[p].isObstacle) {
+            res += p
         }
 
-        val robotDelta = -tentacles[0].rotate(orientation)
-        val hitWall = booleanArrayOf(false, false)
-        var idx = 0
-        val visible = tentacles.asSequence()
-            .map { it.rotate(orientation) + position }
-            .filter { p ->
-                val wall = p !in grid || grid[p].isObstacle
-                val pr = p + robotDelta
-                val robotLevelWall = pr !in grid || grid[pr].isObstacle
-                if (idx > 0) {
-                    hitWall[idx % 2] = hitWall[idx % 2] || wall || robotLevelWall
-                }
-
-                val result = !wall && (idx < 3 || !hitWall[idx % 2])
-                idx++
-                result
-            }
-        return sequenceOf(position) + visible
+        for (t in listOf(tentacles[0]) + tentacles.drop(3)) {
+            p = t.rotate(orientation) + position
+            if (p in grid && !grid[p].isObstacle) {
+                res += p
+            } else break
+        }
+        return res.asSequence()
     }
 
     fun attachTentacle(at: Point) {
@@ -73,7 +65,7 @@ data class Robot(
     }
 
     fun attachmentPoint(): Point {
-        val last = this.tentacles.last()
-        return Point(1, if (last.y > 0) -last.y else -last.y + 1).rotate(orientation)
+        val x = this.tentacles.map { it.x }.max()!!
+        return Point(x + 1, 0).rotate(orientation)
     }
 }
