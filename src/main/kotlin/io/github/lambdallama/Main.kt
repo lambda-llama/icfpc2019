@@ -1,13 +1,14 @@
 package io.github.lambdallama
 
+import com.google.common.base.Stopwatch
 import io.github.lambdallama.strategy.*
 import io.github.lambdallama.ui.launchGui
 import io.github.lambdallama.ui.visualize
 import java.io.File
-import java.nio.file.CopyOption
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.TimeUnit
 
 fun nonInteractiveMain(
         path: String,
@@ -46,8 +47,11 @@ fun nonInteractiveMain(
         }
 
         val actions = mutableListOf<List<Action>>()
+        val sw = Stopwatch.createStarted()
         strategy.run(state.clone()) { actions.add(it) }
-        System.err.println("${strategy.javaClass.simpleName}: ${actions.size}")
+        sw.stop()
+        System.err.println("${strategy.javaClass.simpleName}: ${actions.size}" +
+                " (${sw.toFormattedString()})")
         actions
     }.filter { it.isNotEmpty() }
 
@@ -59,16 +63,8 @@ fun nonInteractiveMain(
             best.transpose().joinToString("#") { it.filterNotNull().joinToString("") })
 
     if (validate) {
-        print("Validating... ")
-        when (val validationResult = validateWithJsValidator(path, tempSolutionPath)) {
-            is JsValidatorResult.Success -> {
-                println("OK, ${validationResult.time}")
-                check(solutionTime == validationResult.time)
-            }
-            is JsValidatorResult.Failure -> {
-                println("ERROR: ${validationResult.error}")
-                return
-            }
+        if (!validateSolution(path, tempSolutionPath, solutionTime)) {
+            return
         }
     }
 
@@ -82,15 +78,8 @@ fun nonInteractiveMain(
                     "replacing the solution file")
             if (!validate) {
                 // Validate anyway, maybe have an extra flag to never ever validate?
-                when (val validationResult = validateWithJsValidator(path, tempSolutionPath)) {
-                    is JsValidatorResult.Success -> {
-                        println("OK: New solution validated")
-                        check(solutionTime == validationResult.time)
-                    }
-                    is JsValidatorResult.Failure -> {
-                        println("ERROR: New solution failed validation: ${validationResult.error}")
-                        return
-                    }
+                if (!validateSolution(path, tempSolutionPath, solutionTime)) {
+                    return
                 }
             }
             val solutionPath = path.substring(0, path.length - 5) + ".sol"
@@ -102,6 +91,28 @@ fun nonInteractiveMain(
             // TODO: maybe check if the files are different and keep if they are?
             Files.delete(Paths.get(tempSolutionPath))
     }
+}
+
+fun validateSolution(path: String, solutionPath: String, solutionTime: Int): Boolean {
+    print("Validating... ")
+    val sw = Stopwatch.createStarted()
+    val validationResult = validateWithJsValidator(path, solutionPath)
+    sw.stop()
+    return when (validationResult) {
+        is JsValidatorResult.Success -> {
+            println("OK, ${validationResult.time} (${sw.toFormattedString()})")
+            check(solutionTime == validationResult.time)
+            true
+        }
+        is JsValidatorResult.Failure -> {
+            println("ERROR: ${validationResult.error} (${sw.toFormattedString()})")
+            false
+        }
+    }
+}
+
+fun Stopwatch.toFormattedString(): String {
+    return "${"%.3f".format(this.elapsed(TimeUnit.MILLISECONDS).toDouble() / 1000)}s"
 }
 
 fun<T> List<List<T>>.transpose(): List<List<T?>> {
