@@ -35,6 +35,7 @@ fun nonInteractiveMain(
             WrapDistanceCount,
             Weighted
     ).map { strategy ->
+        val name = strategy.javaClass.simpleName
         when (strategy) {
 //            GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->
 //                if (state.grid.dim.x >= 100 || state.grid.dim.y >= 100) {
@@ -43,7 +44,7 @@ fun nonInteractiveMain(
             CloneFactory ->
                 // TODO(superbobry): HACK HACK HACK.
                 if ("clone" !in path) {
-                    return@map Pair(strategy, listOf<List<Action>>())
+                    return@map Triple(name, 0, listOf<List<Action>>())
                 }
         }
 
@@ -51,19 +52,19 @@ fun nonInteractiveMain(
         val sw = Stopwatch.createStarted()
         strategy.run(state.clone()) { actions.add(it) }
         sw.stop()
-        println("${strategy.javaClass.simpleName}: ${actions.size}" +
+        println("$name: ${actions.size}" +
                 " (${sw.toFormattedString()})")
-        Pair(strategy, actions)
-    }.filter { it.second.isNotEmpty() }
+        Triple(name, actions.size, actions)
+    }.filter { it.second != 0 }
 
     val tempSolutionPath = path.substring(0, path.length - 5) + ".sol.tmp"
     val solutionFile = File(tempSolutionPath)
-    val best = solutions.minBy { it.second.size }!!
-    val solutionTime = best.second.size
-    println("Best: $solutionTime (" + best.first.javaClass.simpleName.colorize(TerminalColors.BLUE) + ")")
+    val best = solutions.minBy { it.second }!!
+    val solutionTime = best.second
+    println("Best: $solutionTime (" + best.first.colorize(TerminalColors.BLUE) + ")")
 
     solutionFile.writeText(
-            best.second.transpose().joinToString("#") { it.filterNotNull().joinToString("") })
+            best.third.transpose().joinToString("#") { it.filterNotNull().joinToString("") })
 
     if (validate) {
         if (!validateSolution(path, tempSolutionPath, solutionTime)) {
@@ -72,12 +73,27 @@ fun nonInteractiveMain(
     }
 
     val metadata = SolutionMetadata.parse(path.substring(0, path.length - 5) + ".meta")
+
+    solutions.forEach { (strategy, time, _) ->
+        val oldTime = metadata.getTime(strategy)
+        when {
+            oldTime == null ->
+                metadata.setTime(strategy, time)
+            time > oldTime  ->
+                println("WARNING: efficiency degradation for $strategy ($oldTime => $time)".colorize(TerminalColors.YELLOW))
+            time < oldTime -> {
+                println("Efficiency improvement for $strategy ($oldTime => $time)".colorize(TerminalColors.GREEN))
+                metadata.setTime(strategy, time)
+            }
+        }
+    }
+
     when {
         solutionTime > metadata.bestTime ->
-            println(("WARNING: efficiency degradation ($solutionTime > ${metadata.bestTime})," +
+            println(("WARNING: efficiency degradation for best solution (${metadata.bestTime} => $solutionTime)," +
                 " NOT replacing the solution file").colorize(TerminalColors.YELLOW))
         solutionTime < metadata.bestTime -> {
-            println(("Efficiency improvement ($solutionTime < ${metadata.bestTime}), " +
+            println(("Efficiency improvement for best solution (${metadata.bestTime} => $solutionTime), " +
                     "replacing the solution file").colorize(TerminalColors.GREEN))
             if (!validate) {
                 // Validate anyway, maybe have an extra flag to never ever validate?
@@ -88,12 +104,12 @@ fun nonInteractiveMain(
             val solutionPath = path.substring(0, path.length - 5) + ".sol"
             Files.move(Paths.get(tempSolutionPath), Paths.get(solutionPath), StandardCopyOption.REPLACE_EXISTING)
             metadata.bestTime = solutionTime
-            metadata.saveToDisk()
         }
         else ->
             // TODO: maybe check if the files are different and keep if they are?
             Files.delete(Paths.get(tempSolutionPath))
     }
+    metadata.saveToDisk()
 }
 
 fun validateSolution(path: String, solutionPath: String, solutionTime: Int): Boolean {
