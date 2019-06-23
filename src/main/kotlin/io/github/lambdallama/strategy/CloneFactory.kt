@@ -3,7 +3,7 @@ package io.github.lambdallama.strategy
 import io.github.lambdallama.*
 import java.util.*
 
-object ClonePhase: Strategy {
+object ClonePhase : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val clones = state.boosters.filter { it.value == BoosterType.C }
             .map { it.key }
@@ -28,12 +28,15 @@ object ClonePhase: Strategy {
     }
 }
 
-object CloneExtenderPhase: Strategy {
+object CloneExtenderPhase : Strategy {
     override fun run(state: State, sink: ActionSink) {
-        val clones = state.boosters.filter { it.value == BoosterType.C || it.value == BoosterType.B }
-            .map { it.key }
         val spawner = state.boosters.filter { it.value == BoosterType.X }
-            .keys.firstOrNull() ?: return
+            .keys.firstOrNull() ?: return ExtenderPhase.run(state, sink)
+
+        var hasClones = false
+        val clones = state.boosters.filter { (it.value == BoosterType.C && run { hasClones = true; true }) || it.value == BoosterType.B }
+            .map { it.key }
+        if (!hasClones) return ExtenderPhase.run(state, sink)
 
         val route = travelingSalesman(
             state.robot.position, spawner, clones.toMutableSet(), state.grid
@@ -58,7 +61,7 @@ object CloneExtenderPhase: Strategy {
     }
 }
 
-object ExtenderPhase: Strategy {
+object ExtenderPhase : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val clones = state.boosters.filter { it.value == BoosterType.B }
             .map { it.key }
