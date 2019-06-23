@@ -1,6 +1,8 @@
 package io.github.lambdallama
 
-import kotlin.math.*
+import kotlin.math.ceil
+import kotlin.math.log2
+import kotlin.math.max
 
 class ReversibleAction(val action: Action) {
     var pickedUpBooster: BoosterType? = null
@@ -73,10 +75,7 @@ data class State(
         }
     }
 
-    val hasWrappableCells
-        get(): Boolean {
-            return (grid.cellCounts[Cell.FREE] ?: 0) > 0
-        }
+    val hasWrappableCells get(): Boolean = grid.count(Cell.FREE) > 0
 
     fun apply(actions: List<Action>): List<ReversibleAction> {
         require(actions.size == robots.size)

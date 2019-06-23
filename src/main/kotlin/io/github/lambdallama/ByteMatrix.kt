@@ -3,37 +3,70 @@ package io.github.lambdallama
 class ByteMatrix private constructor(
     private val numRows: Int,
     private val numCols: Int,
-    private val buf: ByteArray
+    private val buf: ByteArray,
+    private var numObstacle: Int,
+    private var numVoid: Int,
+    private var numWrapped: Int,
+    private var numFree: Int
 ) {
-    constructor(numRows: Int,
-                numCols: Int, value: Cell)
-        : this(numRows, numCols, ByteArray(numRows * numCols).apply { fill(value.byte) })
-
     val dim: Point get() = Point(numCols, numRows)
 
     operator fun get(p: Point) = get(p.y, p.x)
 
-    operator fun set(p: Point, value: Cell) = set(p.y, p.x, value)
+    operator fun set(p: Point, value: Cell) {
+        when (get(p).byte) {
+            Cell.OBSTACLE.byte -> numObstacle--
+            Cell.VOID.byte -> numVoid--
+            Cell.WRAPPED.byte -> numWrapped--
+            Cell.FREE.byte -> numFree--
+        }
+        set(p.y, p.x, value)
+        when (value.byte) {
+            Cell.OBSTACLE.byte -> numObstacle++
+            Cell.VOID.byte -> numVoid++
+            Cell.WRAPPED.byte -> numWrapped++
+            Cell.FREE.byte -> numFree++
+        }
+    }
 
-    fun clone() = ByteMatrix(numRows, numCols, buf.clone())
+    fun clone() = ByteMatrix(
+        numRows,
+        numCols,
+        buf.clone(),
+        numObstacle,
+        numVoid,
+        numWrapped,
+        numFree)
 
     operator fun contains(p: Point): Boolean =
         p.x >= 0 && p.y >= 0 && p.x < dim.x && p.y < dim.y
 
-    val cellCounts get(): Map<Cell, Int> {
-        val counts = HashMap<Cell, Int>()
-        for (i in 0 until numRows) {
-            for (j in 0 until numCols) {
-                val cell = get(i, j)
-                counts[cell] = (counts[cell] ?: 0) + 1
-            }
-        }
-        return counts
+    fun count(cell: Cell): Int = when (cell.byte) {
+        Cell.OBSTACLE.byte -> numObstacle
+        Cell.VOID.byte -> numVoid
+        Cell.WRAPPED.byte -> numWrapped
+        Cell.FREE.byte -> numFree
+        else -> error("Cannot count $cell entries")
     }
 
     private operator fun get(i: Int, j: Int) = Cell(buf[i * numCols + j])
 
     private operator fun set(i: Int, j: Int, value: Cell) {
         buf[i * numCols + j] = value.byte
+    }
+
+    companion object {
+        operator fun invoke(numRows: Int, numCols: Int, value: Cell): ByteMatrix {
+            val size = numRows * numCols
+            val buf = ByteArray(size).apply { fill(value.byte) }
+            return ByteMatrix(
+                numRows,
+                numCols,
+                buf,
+                numObstacle = if (value == Cell.OBSTACLE) size else 0,
+                numVoid = if (value == Cell.VOID) size else 0,
+                numWrapped = if (value == Cell.WRAPPED) size else 0,
+                numFree = if (value == Cell.FREE) size else 0)
+        }
     }
 }

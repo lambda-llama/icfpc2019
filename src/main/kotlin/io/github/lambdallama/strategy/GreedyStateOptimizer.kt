@@ -71,13 +71,9 @@ fun moveAndTurn(state: State, robot: Robot): List<Action> {
     return moves
 }
 
-fun wrappedCount(state: State): Int {
-    return state.grid.cellCounts[Cell.WRAPPED] ?: 0
-}
-
 fun wrappedRatio(state: State): Double {
-    val wrapped = state.grid.cellCounts[Cell.WRAPPED] ?: 0
-    val free = state.grid.cellCounts[Cell.FREE] ?: 0
+    val wrapped = state.grid.count(Cell.WRAPPED)
+    val free = state.grid.count(Cell.FREE)
     return wrapped / (wrapped + free).toDouble()
 }
 
@@ -130,7 +126,7 @@ val WrapDistanceCount = GreedyStateOptimizer(
         )?.toDouble() ?: 0.0
         val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y)
 
-        wrappedCount(state) - nDw - nDb
+        state.grid.count(Cell.WRAPPED) - nDw - nDb
     },
     actionPolicy = ::moveAndTurn
 )
