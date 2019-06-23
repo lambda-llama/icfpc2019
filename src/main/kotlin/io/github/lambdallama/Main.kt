@@ -70,6 +70,13 @@ fun nonInteractiveMain(
 
     val metadata = SolutionMetadata.parse(path.substring(0, path.length - 5) + ".meta")
 
+    val bestTime = metadata.bestTime
+    val winners = metadata.getTimes().invert()[bestTime]
+    println("Current best: $bestTime (" + (
+            winners?.toSortedSet()?.joinToString(", ")?.colorize(TerminalColors.BLUE)
+            ?: "UNKNOWN".colorize(TerminalColors.YELLOW)
+        ) + ")")
+
     solutions.forEach { (strategy, time, _) ->
         val oldTime = metadata.getTime(strategy)
         when {
@@ -85,11 +92,11 @@ fun nonInteractiveMain(
     }
 
     when {
-        solutionTime > metadata.bestTime ->
-            println(("WARNING: efficiency degradation for best solution (${metadata.bestTime} => $solutionTime)," +
+        solutionTime > bestTime ->
+            println(("WARNING: efficiency degradation for best solution ($bestTime => $solutionTime)," +
                 " NOT replacing the solution file").colorize(TerminalColors.YELLOW))
-        solutionTime < metadata.bestTime -> {
-            println(("Efficiency improvement for best solution (${metadata.bestTime} => $solutionTime), " +
+        solutionTime < bestTime -> {
+            println(("Efficiency improvement for best solution ($bestTime => $solutionTime), " +
                 "replacing the solution file").colorize(TerminalColors.GREEN))
             if (!validate) {
                 // Validate anyway, maybe have an extra flag to never ever validate?
