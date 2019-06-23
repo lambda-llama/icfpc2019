@@ -74,12 +74,16 @@ object Drill : Action {
     override fun toString() = "L"
 }
 
-class Teleport(private val location: Point) : Action {
-    override fun toString() = "R$location"
-}
-
 object NoOp : Action {
     override fun toString() = "Z"
+}
+
+object InstallBeacon : Action {
+    override fun toString() = "R"
+}
+
+data class Teleport(val location: Point) : Action {
+    override fun toString() = "T$location"
 }
 
 typealias ActionSink = (List<Action>) -> Unit

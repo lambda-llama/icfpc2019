@@ -39,7 +39,7 @@ fun generatorMain(path: String) {
     var robot = Robot(Point(0, 0), mutableListOf(), Orientation.RIGHT, 0)
     var state = State(
             ByteMatrix(tSize, tSize, Cell.FREE),
-            mutableMapOf(), mutableListOf(), mutableMapOf()
+            mutableMapOf(), mutableListOf(), mutableListOf(), mutableMapOf()
     )
     for (p in includePoints) {
         state.grid[p] = Cell.WRAPPED

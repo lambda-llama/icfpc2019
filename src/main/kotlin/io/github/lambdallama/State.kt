@@ -10,6 +10,7 @@ class ReversibleAction(val action: Action) {
     var wrappedPoints: Map<Point, Cell> = mapOf()
     var robotFuelLeft: Int = 0
     var madeTwoMoves: Boolean = false
+    var teleportedFrom: Point = Point(0, 0)
 }
 
 private const val FUEL_INITIAL_VALUE = 50
@@ -18,6 +19,7 @@ data class State(
     val grid: ByteMatrix,
     val boosters: MutableMap<Point, BoosterType>,
     val robots: MutableList<Robot>,
+    val teleports: MutableList<Point>,
     val collectedBoosters: MutableMap<BoosterType, Int> = mutableMapOf(
         BoosterType.B to 0,
         BoosterType.F to 0,
@@ -34,12 +36,14 @@ data class State(
         grid.clone(),
         HashMap(boosters),
         robots.map { it.clone() }.toMutableList(),
+        teleports.toMutableList(),
         collectedBoosters.toMutableMap())
 
     fun fakeClone(idx: Int) = State(
         grid.clone(),
         boosters,  // SHARE.
         mutableListOf(robots[idx].clone()),
+        teleports,  // SHARE.
         collectedBoosters)  // SHARE.
 
     companion object {
@@ -70,6 +74,7 @@ data class State(
             return State(
                 grid,
                 boosters.map { it.loc to it.type }.toMap(HashMap()),
+                teleports = mutableListOf(),
                 robots = mutableListOf(Robot(initialLoc))
             ).apply { wrap() }
         }
@@ -141,12 +146,27 @@ data class State(
             }
             is Clone -> {
                 check(boosters[robot.position] == BoosterType.X) {
-                    "${boosters[robot.position]} ${robot.position} ${boosters}"
+                    "${boosters[robot.position]} ${robot.position} $boosters"
                 }
                 val n = collectedBoosters[BoosterType.C]!!
                 check(n > 0)
                 collectedBoosters[BoosterType.C] = n - 1
                 robots += Robot(robot.position)
+                reverseAction.wrappedPoints = wrap()
+            }
+            is InstallBeacon -> {
+                check(boosters[robot.position] == BoosterType.X) {
+                    "${boosters[robot.position]} ${robot.position} $boosters"
+                }
+                val n = collectedBoosters[BoosterType.R]!!
+                check(n > 0)
+                collectedBoosters[BoosterType.R] = n - 1
+                teleports += robot.position
+            }
+            is Teleport -> {
+                check(action.location in teleports)
+                reverseAction.teleportedFrom = robot.position
+                robot.position = action.location
                 reverseAction.wrappedPoints = wrap()
             }
             is NoOp -> Unit
@@ -197,6 +217,14 @@ data class State(
             is Clone -> {
                 collectedBoosters[BoosterType.C] = collectedBoosters[BoosterType.C]!! + 1
                 robots.removeAt(robots.count() - 1)
+                unwrap(reverseAction.wrappedPoints)
+            }
+            is InstallBeacon -> {
+                collectedBoosters[BoosterType.R] = collectedBoosters[BoosterType.R]!! + 1
+                teleports.remove(robot.position)
+            }
+            is Teleport -> {
+                robot.position = reverseAction.teleportedFrom
                 unwrap(reverseAction.wrappedPoints)
             }
             is NoOp -> Unit
