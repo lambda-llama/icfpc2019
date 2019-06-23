@@ -71,11 +71,11 @@ fun nonInteractiveMain(
     val metadata = SolutionMetadata.parse(path.substring(0, path.length - 5) + ".meta")
     when {
         solutionTime > metadata.bestTime ->
-            println("WARNING: efficiency degradation ($solutionTime > ${metadata.bestTime})," +
-                " NOT replacing the solution file")
+            println(("WARNING: efficiency degradation ($solutionTime > ${metadata.bestTime})," +
+                " NOT replacing the solution file").colorize(TerminalColors.YELLOW))
         solutionTime < metadata.bestTime -> {
-            println("Efficiency improvement ($solutionTime < ${metadata.bestTime}), " +
-                    "replacing the solution file")
+            println(("Efficiency improvement ($solutionTime < ${metadata.bestTime}), " +
+                    "replacing the solution file").colorize(TerminalColors.GREEN))
             if (!validate) {
                 // Validate anyway, maybe have an extra flag to never ever validate?
                 if (!validateSolution(path, tempSolutionPath, solutionTime)) {
@@ -100,12 +100,12 @@ fun validateSolution(path: String, solutionPath: String, solutionTime: Int): Boo
     sw.stop()
     return when (validationResult) {
         is JsValidatorResult.Success -> {
-            println("OK, ${validationResult.time} (${sw.toFormattedString()})")
+            println("OK, ${validationResult.time} (${sw.toFormattedString()})".colorize(TerminalColors.GREEN))
             check(solutionTime == validationResult.time)
             true
         }
         is JsValidatorResult.Failure -> {
-            println("ERROR: ${validationResult.error} (${sw.toFormattedString()})")
+            println("ERROR: ${validationResult.error} (${sw.toFormattedString()})".colorize(TerminalColors.RED))
             false
         }
     }
