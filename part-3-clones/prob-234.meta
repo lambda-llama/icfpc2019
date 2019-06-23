@@ -1,1 +1,1 @@
-{"Weighted":4279,"bestTime":2029}
+{"CloneFactory":2029,"GreedyStateOptimizer":1710,"GreedyTurnoverFBPartition":4087,"GreedyUnordered":4405,"GreedyUnorderedFBPartition":4117,"GreedyUnorderedTurnover":4677,"NaiveIterative":9312,"Weighted":4279,"WeightedAccelerated":4313,"bestTime":1710}
