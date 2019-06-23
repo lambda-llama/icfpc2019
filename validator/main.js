@@ -1,13 +1,15 @@
 "use strict";
 let fs = require('fs');
 
-if (process.argv.length != 4) {
-    process.stdout.write("Usage: node validator/main.js DESC SOL");
+let argv = process.argv
+if (argv.length != 5 || (argv[2] != "solution" && argv[2] != "puzzle")) {
+    process.stdout.write("Usage: node validator/puzzle.js <solution|puzzle> TASK SOLUTION");
     process.exit();
 }
 
-const DESCRIPTION_FILE = process.argv[2];
-const SOLUTION_FILE = process.argv[3];
+const MODE = argv[2];
+const TASK_FILE = argv[3];
+const SOLUTION_FILE = argv[4];
 
 // The validator will use `window` for callback subscription and delaying execution
 global.window = {
@@ -50,28 +52,37 @@ global.FileReader = function() {
 // Include the validator script into this scope, source: https://icfpcontest2019.github.io/solution_checker
 eval.apply(global, [fs.readFileSync(__dirname + '/validator.js').toString()]);
 // Call the top-level validator method to subscribe the callbacks
-validate();
+if (MODE == "solution") {
+    validate();
+} else {
+    puzzle();
+}
 
 let e = window.document.elements;
-e.submit_task.files = [new Blob(DESCRIPTION_FILE)];
+e.submit_task.files = [new Blob(TASK_FILE)];
 e.submit_task.onchange();
 e.submit_solution.files = [new Blob(SOLUTION_FILE)];
 e.submit_solution.onchange();
 e.execute_solution.onclick();
 
 let output = e.output.textContent
-let result = {}
-let success = output.match(/Success! \n?Your solution took (\d+) time units\./);
-if (success) {
-    result.success = true;
-    result.time = parseInt(success[1]);
-} else {
-    result.success = false;
-    let failure = output.match(/.*[F|f]ailed.*/);
-    if (failure) {
-        result.error = failure[0];
+if (MODE == "solution") {
+    let result = {}
+    let success = output.match(/Success! \n?Your solution took (\d+) time units\./);
+    if (success) {
+        result.success = true;
+        result.time = parseInt(success[1]);
     } else {
-        result.error = "Unexpected validator output: '" + output + "'";
+        result.success = false;
+        let failure = output.match(/.*[F|f]ailed.*/);
+        if (failure) {
+            result.error = failure[0];
+        } else {
+            result.error = "Unexpected validator output: '" + output + "'";
+        }
     }
+    process.stdout.write(JSON.stringify(result));
+} else {
+    // TODO: write JSON if needed
+    process.stdout.write(output + "\n");
 }
-process.stdout.write(JSON.stringify(result));

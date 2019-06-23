@@ -9,7 +9,7 @@ sealed class JsValidatorResult {
 }
 
 fun validateWithJsValidator(desc: String, sol: String): JsValidatorResult {
-    val result = ProcessBuilder("node", "validator/main.js", desc, sol)
+    val result = ProcessBuilder("node", "validator/main.js", "solution", desc, sol)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
             .start().apply {
