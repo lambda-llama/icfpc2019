@@ -106,10 +106,6 @@ fun isWrapable(state: State, p: Point): Boolean {
     return state.grid[p].isWrapable
 }
 
-fun hasTentacleBonus(state: State, p: Point): Boolean {
-    return state.boosters[p] == BoosterType.B
-}
-
 val WrapDistanceCount = GreedyStateOptimizer(
     stateFunction = { state: State, robot: Robot ->
         val dw = distance(
@@ -118,13 +114,7 @@ val WrapDistanceCount = GreedyStateOptimizer(
         )?.toDouble() ?: 0.0
         val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
 
-        val dB = distance(
-            state, from = robot,
-            targetPointPredicate = ::hasTentacleBonus
-        )?.toDouble() ?: 0.0
-        val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y)
-
-        state.grid.count(Cell.WRAPPED) - nDw - nDb
+        state.grid.count(Cell.WRAPPED) - nDw
     },
     actionPolicy = ::moveAndTurn
 )
