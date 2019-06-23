@@ -47,6 +47,13 @@ object Weighted: Strategy {
     private var weights: ByteMatrix = ByteMatrix(0, 0, Cell.VOID)
     private var wrapableCellsLeft: Int = 0
 
+    private const val DEPTH = 3
+    private const val EXTENDER_PICKUP_SCORE = 1000
+    private const val DEFAULT_CELL_WEIGHT: Byte = 10
+    private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 100
+    private const val CELL_WEIGHT_DECAY = 0.9
+    private const val PREPROCESS_PASS_COUNT = 10
+
     override fun run(state: State, sink: ActionSink) {
         val execute = { a: Action ->
             sink(listOf(a))
@@ -84,8 +91,6 @@ object Weighted: Strategy {
     }
 
     private fun getBestWeightedPath(state: State): List<Action> {
-        val depth = 3
-
         val moves = mutableListOf<Pair<Int, Action>>()
         ACTIONS.forEach { m -> moves.add(Pair(1, m)) }
         val possiblePath = mutableListOf<ReversibleAction>()
@@ -102,12 +107,14 @@ object Weighted: Strategy {
                 continue
             }
             possiblePath.add(state.apply(state.robot, action))
-            if (level < depth) {
+            if (level < DEPTH) {
                 ACTIONS.forEach { m -> moves.add(Pair(level + 1, m)) }
                 continue
             }
 
-            val score = possiblePath.sumBy { getActionWeight(it) }
+            val score = possiblePath.sumBy {
+                getActionWeight(it)
+            }
 
             if (score > maxScore) {
                 maxScore = score
@@ -133,9 +140,13 @@ object Weighted: Strategy {
     }
 
     private fun getActionWeight(action: ReversibleAction): Int {
-        return action.wrappedPoints
+        var score = action.wrappedPoints
                 .map { it.key }
                 .sumBy { weights[it].byte.toInt() }
+        if (action.pickedUpBooster == BoosterType.B) {
+            score += EXTENDER_PICKUP_SCORE
+        }
+        return score
     }
 
     private fun precomputeWeights(state: State) {
@@ -147,19 +158,19 @@ object Weighted: Strategy {
                 if (state.grid[u].isWrapable) {
                     wrapableCellsLeft++
                     if (state.grid.freeNeighbours(u).count() < 4) {
-                        weights[u] = Cell(100)
+                        weights[u] = Cell(BORDER_CELL_INITIAL_WEIGHT)
                     }
                 }
             }
         }
 
-        for (i in 1 until 10) {
+        for (i in 1 until PREPROCESS_PASS_COUNT) {
             val nextLevelWeights = mutableMapOf<Point, Cell>()
             for (x in 0 until weights.dim.x) {
                 for (y in 0 until weights.dim.y) {
                     val u = Point(x, y)
                     if (weights[u] == Cell(0) && state.grid[u].isWrapable) {
-                        nextLevelWeights[u] = Cell((weights[weights.neighbours(u).maxBy { weights[it].byte }!!].byte * 0.9).toByte())
+                        nextLevelWeights[u] = Cell((weights[weights.neighbours(u).maxBy { weights[it].byte }!!].byte * CELL_WEIGHT_DECAY).toByte())
                     }
                 }
             }
@@ -172,7 +183,7 @@ object Weighted: Strategy {
             for (y in 0 until weights.dim.y) {
                 val u = Point(x, y)
                 if (weights[u] == Cell(0) && state.grid[u].isWrapable) {
-                    weights[u] = Cell(10)
+                    weights[u] = Cell(DEFAULT_CELL_WEIGHT)
                 }
             }
         }
