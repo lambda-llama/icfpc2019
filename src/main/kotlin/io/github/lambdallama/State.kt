@@ -6,7 +6,11 @@ class ReversibleAction(val action: Action) {
     var pickedUpBooster: BoosterType? = null
     var pickedUpBoosterPosition: Point = Point(0, 0)
     var wrappedPoints: Map<Point, Cell> = mapOf()
+    var robotFuelLeft: Int = 0
+    var madeTwoMoves: Boolean = false
 }
+
+private const val FUEL_INITIAL_VALUE = 50
 
 data class State(
     val grid: ByteMatrix,
@@ -94,11 +98,22 @@ data class State(
                 collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
             }
         }
+
+        reverseAction.robotFuelLeft = robot.fuelLeft
+
         when (action) {
             is Move -> {
                 robot.position = robot.position.apply(action)
                 check(!grid[robot.position].isObstacle)
                 reverseAction.wrappedPoints = wrap()
+                if (robot.fuelLeft > 0) {
+                    val newPosition = robot.position.apply(action)
+                    if (newPosition in grid && !grid[newPosition].isObstacle) {
+                        robot.position = newPosition
+                        reverseAction.wrappedPoints += wrap()
+                        reverseAction.madeTwoMoves = true
+                    }
+                }
             }
             is TurnClockwise -> {
                 robot.rotate(Rotation.CLOCKWISE)
@@ -119,6 +134,12 @@ data class State(
                 robot.attachTentacle(action.location)
                 reverseAction.wrappedPoints = wrap()
             }
+            is Accelerate -> {
+                val n = collectedBoosters[BoosterType.F]!!
+                check(n > 0)
+                collectedBoosters[BoosterType.F] = n - 1
+                robot.fuelLeft = FUEL_INITIAL_VALUE + 1 // accounting for decrement below
+            }
             is Clone -> {
                 check(boosters[robot.position] == BoosterType.X) {
                     "${boosters[robot.position]} ${robot.position} ${boosters}"
@@ -132,6 +153,9 @@ data class State(
             is NoOp -> Unit
             else -> TODO("Not supported yet")
         }
+
+        robot.fuelLeft = max(0, robot.fuelLeft - 1)
+
         return reverseAction
     }
 
@@ -150,7 +174,9 @@ data class State(
         when (reverseAction.action) {
             is Move -> {
                 robot.position = robot.position.unapply(reverseAction.action)
-                check(!grid[robot.position].isObstacle)
+                if (reverseAction.madeTwoMoves) {
+                    robot.position = robot.position.unapply(reverseAction.action)
+                }
                 unwrap(reverseAction.wrappedPoints)
             }
             is TurnClockwise -> {
@@ -166,6 +192,9 @@ data class State(
                 robot.detachLastTentacle()
                 unwrap(reverseAction.wrappedPoints)
             }
+            is Accelerate -> {
+                collectedBoosters[BoosterType.F] = collectedBoosters[BoosterType.F]!! + 1
+            }
             is Clone -> {
                 collectedBoosters[BoosterType.C] = collectedBoosters[BoosterType.C]!! + 1
                 robots.removeAt(robots.count() - 1)
@@ -174,6 +203,7 @@ data class State(
             is NoOp -> Unit
             else -> TODO("Not supported yet")
         }
+        robot.fuelLeft = reverseAction.robotFuelLeft
         return reverseAction.action
     }
 
@@ -219,6 +249,9 @@ data class State(
                 collectedBoosters[BoosterType.B]!! > 0
                         && robot.tentacles.map { it.rotate(robot.orientation) }
                                 .map { it.manhattanDist(action.location) }.min()!! == 1
+            }
+            is Accelerate -> {
+                collectedBoosters[BoosterType.F]!! > 0
             }
             is Clone -> {
                 collectedBoosters[BoosterType.C]!! > 0

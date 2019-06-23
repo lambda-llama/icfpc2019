@@ -3,7 +3,8 @@ package io.github.lambdallama
 data class Robot(
     var position: Point,
     val tentacles: MutableList<Point>,
-    var orientation: Orientation
+    var orientation: Orientation,
+    var fuelLeft: Int
 ) {
     constructor(position: Point)
         : this(
@@ -13,11 +14,12 @@ data class Robot(
             Point(1, 1),
             Point(1, -1)
         ),
-        orientation = Orientation.RIGHT
+        orientation = Orientation.RIGHT,
+        fuelLeft = 0
     )
 
 
-    fun clone() = Robot(position, tentacles.toMutableList(), orientation)
+    fun clone() = Robot(position, tentacles.toMutableList(), orientation, fuelLeft)
 
     fun rotate(rotation: Rotation) {
         orientation = orientation.rotate(rotation)

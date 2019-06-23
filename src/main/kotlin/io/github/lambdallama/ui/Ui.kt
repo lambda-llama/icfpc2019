@@ -92,7 +92,8 @@ private fun State.toMap(): Map {
         robots
             .flatMap { robot -> robot.getVisibleParts(grid).map { it to Pill.ROBOT } }
             + boosters.map { it.key to it.value.toPill() },
-        collectedBoosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList()
+        collectedBoosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList(),
+        robots.map { it.fuelLeft }
     )
 }
 
@@ -149,7 +150,8 @@ private class Ui {
     fun modifyState(f: ViewState.() -> Unit) {
         f(viewState)
         label.text = "Last Action: ${viewState.map?.lastAction ?: "N/A"}; " +
-            "Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")} " +
+            "Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}; " +
+            "Fuel: ${viewState.map?.fuel.orEmpty().joinToString(", ")}; " +
             "Cell: (${viewState.mouseX / canvas.cellSize}, ${viewState.mouseY /canvas.cellSize})"
 
         frame.repaint()
@@ -217,6 +219,7 @@ class Map(
     init: (Point) -> UiCell = { _ -> UiCell.FREE },
     val pills: List<Pair<Point, Pill>>,
     var boosers: List<BoosterType> = emptyList(),
+    var fuel: List<Int> = emptyList(),
     var lastAction: String? = null
 ) {
     private val cells: Array<UiCell> = Array(height * width) { i -> init(Point(i % width, i / width)) }
