@@ -31,6 +31,7 @@ fun nonInteractiveMain(
             GreedyUnordered,
             GreedyUnorderedTurnover,
             GreedyUnorderedFBPartition,
+            phases(ExtenderPhase, GreedyUnorderedFBPartition),
             GreedyTurnoverFBPartition,
             CloneFactory,
             phases(ClonePhase, WrapDistanceCount),
@@ -176,5 +177,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    CloneFactory.run(state, visualize(state, true))
+    WrapDistanceCount.run(state, visualize(state, true))
 }

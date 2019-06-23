@@ -32,11 +32,40 @@ object CloneExtenderPhase: Strategy {
     override fun run(state: State, sink: ActionSink) {
         val clones = state.boosters.filter { it.value == BoosterType.C || it.value == BoosterType.B }
             .map { it.key }
-            val spawner = state.boosters.filter { it.value == BoosterType.X }
+        val spawner = state.boosters.filter { it.value == BoosterType.X }
             .keys.firstOrNull() ?: return
 
         val route = travelingSalesman(
             state.robot.position, spawner, clones.toMutableSet(), state.grid
+        )!!
+
+        for (move in route.toMoves()) {
+            sink(listOf(move))
+            state.apply(listOf(move))
+            if (state.hasBooster(BoosterType.B)) {
+                val action = Attach(state.robots.first().attachmentPoint())
+                sink(listOf(action))
+                state.apply(listOf(action))
+            }
+        }
+        while (state.hasBooster(BoosterType.C)) {
+            val nRobots = state.robots.size
+            val nBoosters = state.nBoosters(BoosterType.C)
+            val actions = (0 until nRobots).map { if (it < nBoosters) Clone else NoOp }
+            state.apply(actions)
+            sink(actions)
+        }
+    }
+}
+
+object ExtenderPhase: Strategy {
+    override fun run(state: State, sink: ActionSink) {
+        val clones = state.boosters.filter { it.value == BoosterType.B }
+            .map { it.key }
+        if (clones.isEmpty()) return
+
+        val route = travelingSalesman(
+            state.robot.position, clones.last(), clones.dropLast(1).toMutableSet(), state.grid
         )!!
 
         for (move in route.toMoves()) {
