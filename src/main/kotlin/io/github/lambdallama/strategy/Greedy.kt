@@ -268,7 +268,8 @@ object InstallUniformBeacons : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val teleports = state.boosters.filterValues { it == BoosterType.R }.keys
         val fastWheels: Set<Point> = state.boosters.filterValues { it == BoosterType.F }.keys
-        if (teleports.isNotEmpty()) {
+        val extensions: Set<Point> = state.boosters.filterValues { it == BoosterType.B }.keys
+        val targets = if (teleports.isNotEmpty()) {
             val grid = state.grid
             val distances = distanceToAll(state, state.robot.position)
             val targets = chunkify(grid, teleports.size).map { chunk ->
@@ -280,9 +281,11 @@ object InstallUniformBeacons : Strategy {
             }
             check(targets.none { grid[it].isObstacle || BoosterType.X == state.boosters[it] })
             check(targets.size == teleports.size)
+            targets
+        } else emptyList()
 
-            installBeacons(state, teleports, targets, fastWheels, sink)
-        }
+        // No beacons to install? Who cares!
+        installBeacons(state, teleports, targets, fastWheels, extensions, sink)
     }
 
     private fun installBeacons(
@@ -290,15 +293,18 @@ object InstallUniformBeacons : Strategy {
         teleports: Set<Point>,
         targets: List<Point>,
         fastWheels: Set<Point>,
+        extensions: Set<Point>,
         sink: ActionSink
     ) {
         val grid = state.grid
         var collected = 0
         var installed = 0
+        var attached = 0
         val q = PointSet(grid.dim)
         teleports.forEach(q::add)
         fastWheels.forEach(q::add)
-        while (installed < teleports.size) {
+        extensions.forEach(q::add)
+        while (installed < teleports.size && attached < extensions.size) {
             if (state.hasBooster(BoosterType.F)) {
                 state.apply(listOf(Accelerate))
                 sink(listOf(Accelerate))
@@ -324,6 +330,12 @@ object InstallUniformBeacons : Strategy {
                     state.apply(listOf(InstallBeacon))
                     sink(listOf(InstallBeacon))
                     installed++
+                }
+                in extensions -> {
+                    val action = Attach(state.robot.attachmentPoint())
+                    state.apply(listOf(action))
+                    sink(listOf(action))
+                    attached++
                 }
             }
 
