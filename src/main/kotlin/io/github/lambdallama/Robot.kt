@@ -1,25 +1,27 @@
 package io.github.lambdallama
 
 data class Robot(
-    var position: Point,
-    val tentacles: MutableList<Point>,
-    var orientation: Orientation,
-    var fuelLeft: Int
+        var id: Int,
+        var position: Point,
+        val tentacles: MutableList<Point>,
+        var orientation: Orientation,
+        var fuelLeft: Int = 0
 ) {
-    constructor(position: Point)
+    constructor(position: Point, id: Int)
         : this(
-        position,
-        tentacles = mutableListOf(
-            Point(1, 0),
-            Point(1, 1),
-            Point(1, -1)
-        ),
-        orientation = Orientation.RIGHT,
-        fuelLeft = 0
+            id,
+            position,
+            tentacles = mutableListOf(
+                    Point(1, 0),
+                    Point(1, 1),
+                    Point(1, -1)
+            ),
+            orientation = Orientation.RIGHT,
+            fuelLeft = 0
     )
 
 
-    fun clone() = Robot(position, tentacles.toMutableList(), orientation, fuelLeft)
+    fun clone() = Robot(id, position, tentacles.toMutableList(), orientation, fuelLeft)
 
     fun rotate(rotation: Rotation) {
         orientation = orientation.rotate(rotation)

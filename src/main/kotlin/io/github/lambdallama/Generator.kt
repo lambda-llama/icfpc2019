@@ -36,7 +36,7 @@ fun generatorMain(path: String) {
     val includePoints = parseRepSepPoints(rawInclude, ',')
     val excludePoints = parseRepSepPoints(rawExclude, ',')
 
-    var robot = Robot(Point(0, 0), mutableListOf(), Orientation.RIGHT, 0)
+    var robot = Robot(0, Point(0, 0), mutableListOf(), Orientation.RIGHT, 0)
     var state = State(
             ByteMatrix(tSize, tSize, Cell.FREE),
             mutableMapOf(), mutableListOf(), mutableListOf(), mutableMapOf()

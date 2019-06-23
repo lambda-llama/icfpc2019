@@ -75,7 +75,7 @@ data class State(
                 grid,
                 boosters.map { it.loc to it.type }.toMap(HashMap()),
                 beacons = mutableListOf(),
-                robots = mutableListOf(Robot(initialLoc))
+                robots = mutableListOf(Robot(initialLoc, id=0))
             ).apply { wrap() }
         }
     }
@@ -151,7 +151,7 @@ data class State(
                 val n = collectedBoosters[BoosterType.C]!!
                 check(n > 0)
                 collectedBoosters[BoosterType.C] = n - 1
-                robots += Robot(robot.position)
+                robots += Robot(robot.position, id=robots.size)
                 reverseAction.wrappedPoints = wrap()
             }
             is InstallBeacon -> {

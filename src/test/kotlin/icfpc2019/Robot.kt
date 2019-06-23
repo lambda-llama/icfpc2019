@@ -10,7 +10,8 @@ class TestRobot {
         val robot = Robot(
                 position = Point(2, 1),
                 tentacles = mutableListOf(Point(1, 0), Point(1, 1), Point(1, -1), Point(1, 2)),
-                orientation = Orientation.UP
+                orientation = Orientation.UP,
+                id=0
         )
         assertEquals(
                 listOf(Point(2, 1), Point(2, 2), Point(1, 2), Point(3, 2), Point(0, 2)),
@@ -32,7 +33,8 @@ class TestRobot {
                 position = Point(2, 0),
                 tentacles = mutableListOf(Point(1, 0), Point(1, 1), Point(1, -1),
                         Point(1, 2), Point(1, -2)),
-                orientation = Orientation.UP
+                orientation = Orientation.UP,
+                id=0
         )
         val grid = ByteMatrix(2, 5, Cell.FREE)
         grid[Point(1, 0)] = Cell.OBSTACLE
