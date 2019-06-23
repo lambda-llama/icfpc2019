@@ -77,13 +77,6 @@ object ExtenderPhase: Strategy {
                 state.apply(listOf(action))
             }
         }
-        while (state.hasBooster(BoosterType.C)) {
-            val nRobots = state.robots.size
-            val nBoosters = state.nBoosters(BoosterType.C)
-            val actions = (0 until nRobots).map { if (it < nBoosters) Clone else NoOp }
-            state.apply(actions)
-            sink(actions)
-        }
     }
 }
 
