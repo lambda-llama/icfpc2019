@@ -33,7 +33,8 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
     val unwind = mutableListOf<List<ReversibleAction>>()
     val rewind = mutableListOf<List<Action>>()
     var lastFrame = now()
-    draw(state.toMap())
+    var steps = 0
+    draw(state.toMap().apply { this.steps = steps })
     return { actions ->
         var consumedActions = false
         while (!consumedActions) {
@@ -49,6 +50,7 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
             var processedActions: List<Action>? = null
             when (UI.stepDirection) {
                 StepDirection.FORWARD -> {
+                    steps += 1
                     if (rewind.count() > 0) {
                         processedActions = rewind.removeAt(rewind.count() - 1)
                         unwind.add(state.apply(processedActions))
@@ -59,6 +61,7 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
                     }
                 }
                 StepDirection.BACK -> {
+                    steps -= 1
                     if (unwind.count() > 0) {
                         val lastActions = unwind.removeAt(unwind.count() - 1)
                         processedActions = state.unapply(lastActions)
@@ -68,7 +71,7 @@ fun visualize(initialState: State, step: Boolean = false): ActionSink {
                     }
                 }
             }
-            draw(state.toMap().apply { lastAction = processedActions?.toString() })
+            draw(state.toMap().apply { lastAction = processedActions?.toString(); this.steps = steps })
         }
     }
 }
@@ -172,7 +175,8 @@ private class Ui {
             "Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}; " +
             "Fuel: ${viewState.map?.fuel.orEmpty().joinToString(", ")}; " +
             "Cell: (${viewState.mouseX / canvas.cellSize}, ${(viewState.map?.dim?.y
-                ?: 0) - (viewState.mouseY / canvas.cellSize + 1)})"
+                ?: 0) - (viewState.mouseY / canvas.cellSize + 1)}) " +
+            "Steps: ${viewState.map?.steps}"
 
         frame.repaint()
     }
@@ -240,7 +244,8 @@ class Map(
     val pills: List<Pair<Point, Pill>>,
     var boosers: List<BoosterType> = emptyList(),
     var fuel: List<Int> = emptyList(),
-    var lastAction: String? = null
+    var lastAction: String? = null,
+    var steps: Int = 0
 ) {
     private val cells: Array<UiCell> = Array(height * width) { i -> init(Point(i % width, i / width)) }
     operator fun get(x: Int, y: Int): UiCell =
