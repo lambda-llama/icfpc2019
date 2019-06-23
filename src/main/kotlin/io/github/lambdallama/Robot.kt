@@ -1,8 +1,5 @@
 package io.github.lambdallama
 
-import java.util.*
-import kotlin.collections.ArrayList
-
 data class Robot(
     var position: Point,
     val tentacles: MutableList<Point>,
@@ -56,7 +53,7 @@ data class Robot(
                 parts.add(p)
             }
         }
-        return Arrays.asList()
+        return parts
     }
 
     fun attachTentacle(at: Point) {
