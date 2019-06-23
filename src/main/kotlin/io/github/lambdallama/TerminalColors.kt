@@ -7,6 +7,7 @@ object TerminalColors {
     const val YELLOW = "$ESCAPE[33m"
     const val RED = "$ESCAPE[31m"
     const val BLUE = "$ESCAPE[34m"
+    const val MAGENTA = "$ESCAPE[35m"
     const val DEFAULT = "$ESCAPE[39m"
 }
 

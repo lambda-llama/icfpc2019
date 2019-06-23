@@ -18,7 +18,7 @@ fun nonInteractiveMain(
     infoOnly: Boolean
 ) {
     val state = State.parse(File(path).readText())
-    println("Map: $path, dim: ${state.grid.dim}, max points: ${state.maxPoints}")
+    println("Map: $path, dim: ${state.grid.dim}, max points: ${state.maxPoints}".colorize(TerminalColors.MAGENTA))
     if (showBonusCount) {
         println("Bonus count: ${bonusCount(state)}")
     }
