@@ -91,18 +91,7 @@ data class State(
 
     fun apply(robot: Robot, action: Action): ReversibleAction {
         val reverseAction = ReversibleAction(action)
-        val boosterType = boosters.remove(robot.position)
-        if (boosterType != null) {
-            if (boosterType == BoosterType.X) {
-                // put spawning point back
-                boosters += robot.position to boosterType
-            } else {
-                reverseAction.pickedUpBooster = boosterType
-                reverseAction.pickedUpBoosterPosition = robot.position
-                collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
-            }
-        }
-
+        maybeCollectBooster(robot, reverseAction)
         reverseAction.robotFuelLeft = robot.fuelLeft
 
         when (action) {
@@ -114,6 +103,7 @@ data class State(
                     val newPosition = robot.position.apply(action)
                     if (newPosition in grid && !grid[newPosition].isObstacle) {
                         robot.position = newPosition
+                        maybeCollectBooster(robot, reverseAction)
                         reverseAction.wrappedPoints += wrap()
                         reverseAction.madeTwoMoves = true
                     }
@@ -176,6 +166,20 @@ data class State(
         robot.fuelLeft = max(0, robot.fuelLeft - 1)
 
         return reverseAction
+    }
+
+    private fun maybeCollectBooster(robot: Robot, reverseAction: ReversibleAction) {
+        val boosterType = boosters.remove(robot.position)
+        if (boosterType != null) {
+            if (boosterType == BoosterType.X) {
+                // put spawning point back
+                boosters += robot.position to boosterType
+            } else {
+                reverseAction.pickedUpBooster = boosterType
+                reverseAction.pickedUpBoosterPosition = robot.position
+                collectedBoosters[boosterType] = collectedBoosters[boosterType]!! + 1
+            }
+        }
     }
 
     fun unapply(reverseActions: List<ReversibleAction>): List<Action> {
