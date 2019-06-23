@@ -35,9 +35,24 @@ data class Point(val x: Int, val y: Int) {
 class PointSet(private val dim: Point) {
     private val buf = BitSet(dim.x * dim.y)
 
-    fun add(p: Point) = buf.set(p.y * dim.x + p.x)
+    var size = 0
+        private set
 
-    fun remove(p: Point) = buf.clear(p.y * dim.x + p.x)
+    fun add(p: Point) {
+        val idx = p.y * dim.x + p.x
+        if (!buf[idx]) {
+            buf.set(idx)
+            size++
+        }
+    }
+
+    fun remove(p: Point) {
+        val idx = p.y * dim.x + p.x
+        if (buf[idx]) {
+            buf.clear(idx)
+            size--
+        }
+    }
 
     operator fun contains(p: Point) = buf.get(p.y * dim.x + p.x)
 

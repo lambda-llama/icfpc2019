@@ -97,10 +97,10 @@ data class State(
         when (action) {
             is Move -> {
                 robot.position = robot.position.apply(action)
-                maybeCollectBooster(robot, reverseAction)
                 check(!grid[robot.position].isObstacle)
                 reverseAction.wrappedPoints = wrap()
                 if (robot.fuelLeft > 0) {
+                    maybeCollectBooster(robot, reverseAction)
                     val newPosition = robot.position.apply(action)
                     if (newPosition in grid && !grid[newPosition].isObstacle) {
                         robot.position = newPosition
