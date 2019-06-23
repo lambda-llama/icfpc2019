@@ -8,7 +8,7 @@ object ClonePhase: Strategy {
         val clones = state.boosters.filter { it.value == BoosterType.C }
             .map { it.key }
         val spawner = state.boosters.filter { it.value == BoosterType.X }
-            .keys.first()
+            .keys.firstOrNull() ?: return
 
         val route = travelingSalesman(
             state.robot.position, spawner, clones.toMutableSet(), state.grid

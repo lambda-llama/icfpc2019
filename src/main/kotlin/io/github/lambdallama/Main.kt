@@ -38,18 +38,6 @@ fun nonInteractiveMain(
             WeightedAccelerated
     ).filter { strategyRegex.matches(it.javaClass.simpleName) } .map { strategy ->
         val name = strategy.javaClass.simpleName
-        when (strategy) {
-//            GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->
-//                if (state.grid.dim.x >= 100 || state.grid.dim.y >= 100) {
-//                    return@map mutableListOf<List<Action?>>()
-//                }
-            CloneFactory ->
-                // TODO(superbobry): HACK HACK HACK.
-                if ("clone" !in path) {
-                    return@map Triple(name, 0, listOf<List<Action>>())
-                }
-        }
-
         val actions = mutableListOf<List<Action>>()
         val sw = Stopwatch.createStarted()
         strategy.run(state.clone()) { actions.add(it) }
@@ -187,6 +175,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    ClonePhase.run(state, visualize(state, false))
-    WrapDistanceCount.run(state, visualize(state, true))
+    WrapDistanceCount.run(state, visualize(state, false))
 }
