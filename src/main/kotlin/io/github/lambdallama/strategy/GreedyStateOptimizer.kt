@@ -1,17 +1,25 @@
 package io.github.lambdallama.strategy
 
 import io.github.lambdallama.*
-import java.util.*
 
 typealias StateFunction = (State, Robot) -> Double
 typealias ActionPolicy = (State, Robot) -> List<Action>
+typealias StateChangeCallback = (State) -> Unit
+
+fun noOpStateChangeCallback(state: State) {
+}
 
 class GreedyStateOptimizer(
     val stateFunction: StateFunction,
-    val actionPolicy: ActionPolicy
+    val actionPolicy: ActionPolicy,
+    val stateChangeCallback: StateChangeCallback = ::noOpStateChangeCallback,
+    private val strategyName: String? = null
 ) : Strategy {
+    override val name: String get() = strategyName ?: super.name
 
     override fun run(state: State, sink: ActionSink) {
+        stateChangeCallback(state)
+
         var isTerminal = false
         while (!isTerminal) {
             isTerminal = true
@@ -34,6 +42,7 @@ class GreedyStateOptimizer(
                     robotMoves.add(bestMove)
                     isTerminal = false
                     state.apply(robot, bestMove)
+                    stateChangeCallback(state)
                 }
                 robotIndex += 1
             }
@@ -47,13 +56,16 @@ class GreedyStateOptimizer(
 private val MOVES = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight)
 private val TURNS = arrayOf(TurnClockwise, TurnCounter)
 
+fun accessibleOnMap(state: State, p: Point): Boolean {
+    return p in state.grid && !state.grid[p].isObstacle
+}
+
 fun allAllowedMovesPolicy(state: State, robot: Robot): List<Action> {
     if (!state.hasWrappableCells) {
         return listOf()
     }
     return MOVES.filter { move ->
-        val nextPostion = move(robot.position)
-        nextPostion in state.grid && !state.grid[nextPostion].isObstacle
+        accessibleOnMap(state, move(robot.position))
     }
 }
 
@@ -75,28 +87,62 @@ fun wrappedRatio(state: State): Double {
     return wrapped / (wrapped + free).toDouble()
 }
 
-typealias PointPredicate = (State, Point) -> Boolean
+private typealias PointPredicate = (State, Point) -> Boolean
 
-fun distance(state: State, from: Robot, targetPointPredicate: PointPredicate): Int? {
-    val grid = state.grid
-    val d = PointIntMap(grid.dim)
+private fun noEarlyStopping(state: State, point: Point): Boolean {
+    return false
+}
+
+private typealias OnDistanceUpdateCallback = (Point, Point) -> Unit
+
+private fun noOpOnDistanceUpdate(from: Point, to: Point) {
+
+}
+
+private fun bfs(state: State, from: List<Point>,
+                dist: MutableMap<Point, Int>,
+                canVisit: PointPredicate,
+                earlyStopping: PointPredicate = ::noEarlyStopping,
+                onDistanceUpdate: OnDistanceUpdateCallback = ::noOpOnDistanceUpdate
+): List<Point> {
     val q = PointDeque()
-    d[from.position] = 0
-    q.addLast(from.position)
+    for (u in from) {
+        dist[u] = 0
+        q.addLast(u)
+    }
+
+    val visited = mutableListOf<Point>()
     while (q.isNotEmpty()) {
         val u = q.removeFirst()
-        if (targetPointPredicate(state, u)) {
-            return d[u]
+        visited.add(u)
+        // Remaining nodes in the queue won't be marked as visited!
+        if (earlyStopping(state, u)) {
+            break
         }
         for (move in MOVES) {
             val v = move(u)
-            if (v in grid && !grid[v].isObstacle) {
-                val du = d[u] + 1
-                if (d.getOrDefault(v, Int.MAX_VALUE) > du) {
-                    d[v] = du
+            if (canVisit(state, v)) {
+                var du = dist[u]!! + 1
+                if (dist.getOrDefault(v, Int.MAX_VALUE) > du) {
+                    dist[v] = du
                     q.addLast(v)
+                    onDistanceUpdate(u, v)
                 }
             }
+        }
+    }
+    return visited
+}
+
+fun distance(state: State, from: Robot,
+             targetPointPredicate: PointPredicate,
+             canVisit: PointPredicate
+): Int? {
+    val d = HashMap<Point, Int>()
+    bfs(state, from = listOf(from.position), dist = d, earlyStopping = targetPointPredicate, canVisit = canVisit)
+    for ((u, du) in d) {
+        if (targetPointPredicate(state, u)) {
+            return du
         }
     }
     return null
@@ -110,11 +156,149 @@ val WrapDistanceCount = GreedyStateOptimizer(
     stateFunction = { state: State, robot: Robot ->
         val dw = distance(
             state, from = robot,
-            targetPointPredicate = ::isWrapable
+            targetPointPredicate = ::isWrapable,
+            canVisit = ::accessibleOnMap
         )?.toDouble() ?: 0.0
         val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
 
         state.grid.count(Cell.WRAPPED) - nDw
     },
-    actionPolicy = ::moveAndTurn
+    actionPolicy = ::moveAndTurn,
+    strategyName = "SimpleStateOptimizer"
+)
+
+fun inComponent(s: State, p: Point): Boolean {
+    return p in s.grid && isWrapable(s, p)
+}
+
+
+private object UnwrappedComponents {
+
+    data class ComponentInfo(
+        var id: Int,
+        var size: Int, var robot: Robot?,
+        var farawayPoint: Point?, var farawayDist: Int
+    )
+
+    private val cellComponent = HashMap<Point, Int>()
+    private val d = HashMap<Point, Int>()
+    private val parent = HashMap<Point, Point?>()
+    private val robotComponents = HashMap<Int, MutableList<Int>>()
+    private var componentInfo = arrayOf<ComponentInfo>()
+
+
+    fun getRobotComponents(robot: Robot): List<ComponentInfo> {
+        val componentInds = robotComponents[robot.id]!!
+        return componentInds.map { componentInfo[it] }
+    }
+
+    fun getComponentId(p: Point): Int {
+        return cellComponent[p] ?: -1
+    }
+
+    fun updateState(state: State) {
+        val grid = state.grid
+        d.clear()
+        cellComponent.clear()
+        var componentsCount = 0
+        for (x in 0 until grid.dim.x) {
+            for (y in 0 until grid.dim.y) {
+                val p = Point(x, y)
+                if (!isWrapable(state, p) || p in d) {
+                    continue
+                }
+
+                val component = bfs(state, from = listOf(p), dist = d, canVisit = ::inComponent)
+                for (q in component) {
+                    cellComponent[q] = componentsCount
+                }
+                componentsCount += 1
+            }
+        }
+        d.clear()
+        parent.clear()
+        val robotPositions = state.robots.map { it.position }
+        for (p in robotPositions) {
+            parent[p] = p
+        }
+        bfs(
+            state, from = robotPositions,
+            dist = d, canVisit = ::accessibleOnMap,
+            onDistanceUpdate = { from, to -> parent[to] = parent[from] }
+        )
+        componentInfo = Array(componentsCount) { id ->
+            ComponentInfo(
+                id = id,
+                size = 0, robot = null,
+                farawayPoint = null, farawayDist = 0
+            )
+        }
+
+        for ((p, cInd) in cellComponent) {
+            val info = componentInfo[cInd]
+            val dist = d[p]!!
+            info.size += 1
+            if (info.farawayDist < dist) {
+                info.farawayDist = dist
+                info.farawayPoint = p
+            }
+        }
+        robotComponents.clear()
+        for (robot in state.robots) {
+            robotComponents[robot.id] = mutableListOf()
+            for (cInd in 0 until componentsCount) {
+                val info = componentInfo[cInd]
+                if (info.robot != null) {
+                    continue
+                }
+                if (parent[info.farawayPoint] == robot.position) {
+                    info.robot = robot
+                    (robotComponents[robot.id]!!).add(cInd)
+                }
+            }
+        }
+    }
+}
+
+fun componentSize(state: State, point: Point): Int {
+    val d = HashMap<Point, Int>()
+    return bfs(state, from = listOf(point), canVisit = ::inComponent, dist = d).size
+}
+
+fun companentBasedCost(state: State, robot: Robot): Double {
+    val components = UnwrappedComponents.getRobotComponents(robot)
+    val component = components.minBy { component -> component.farawayDist }
+    if (component == null) {
+        // Explore without assignment
+        val dw = distance(
+            state, from = robot,
+            targetPointPredicate = ::isWrapable,
+            canVisit = ::accessibleOnMap
+        )?.toDouble() ?: 0.0
+        val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
+
+        // TODO(alexeyc): Use FREE as unwrapped synonym as optimization.
+        // TODO(alexeyc): Inverse state cost function here and above.
+        return -state.grid.count(Cell.FREE) - nDw
+    } else {
+        // Explore without assignment
+        val dw = distance(
+            state, from = robot,
+            targetPointPredicate = { state: State, p: Point ->
+                UnwrappedComponents.getComponentId(p) == component.id
+            },
+            canVisit = ::accessibleOnMap
+        )?.toDouble() ?: 0.0
+        val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
+
+        return -componentSize(state, component.farawayPoint!!) - nDw
+    }
+}
+
+
+val FillAndExplore = GreedyStateOptimizer(
+    stateFunction = ::companentBasedCost,
+    actionPolicy = ::moveAndTurn,
+    stateChangeCallback = UnwrappedComponents::updateState,
+    strategyName = "FillAndExplore"
 )
