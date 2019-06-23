@@ -139,14 +139,14 @@ private val PALLETE = listOf(
     Color(246, 74, 138),
     Color(115, 169, 194),
     Color(102, 2, 60),
-    Color(255,200,124),
+    Color(255, 200, 124),
     Color(0, 15, 137),
     Color(77, 93, 83),
     Color(251, 96, 127),
-    Color(0,255,255),
-    Color(255,203,164),
-    Color(179,27,27),
-    Color(255,153,102)
+    Color(0, 255, 255),
+    Color(255, 203, 164),
+    Color(179, 27, 27),
+    Color(255, 153, 102)
 )
 
 class ViewState(
@@ -171,7 +171,8 @@ private class Ui {
         label.text = "Last Action: ${viewState.map?.lastAction ?: "N/A"}; " +
             "Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}; " +
             "Fuel: ${viewState.map?.fuel.orEmpty().joinToString(", ")}; " +
-            "Cell: (${viewState.mouseX / canvas.cellSize}, ${viewState.mouseY / canvas.cellSize})"
+            "Cell: (${viewState.mouseX / canvas.cellSize}, ${(viewState.map?.dim?.y
+                ?: 0) - (viewState.mouseY / canvas.cellSize + 1)})"
 
         frame.repaint()
     }
