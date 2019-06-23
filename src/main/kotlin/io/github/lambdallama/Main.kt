@@ -33,11 +33,11 @@ fun nonInteractiveMain(
             GreedyUnorderedFBPartition,
             GreedyTurnoverFBPartition,
             CloneFactory,
-            WrapDistanceCount,
+            phases(ClonePhase, WrapDistanceCount, name = "GreedyStateOptimizer"),
             Weighted,
             WeightedAccelerated
-    ).filter { strategyRegex.matches(it.javaClass.simpleName) } .map { strategy ->
-        val name = strategy.javaClass.simpleName
+    ).filter { strategyRegex.matches(it.name) } .map { strategy ->
+        val name = strategy.name
         val actions = mutableListOf<List<Action>>()
         val sw = Stopwatch.createStarted()
         strategy.run(state.clone()) { actions.add(it) }

@@ -12,8 +12,6 @@ class GreedyStateOptimizer(
 ) : Strategy {
 
     override fun run(state: State, sink: ActionSink) {
-        ClonePhase.run(state, sink)
-
         var isTerminal = false
         while (!isTerminal) {
             isTerminal = true
