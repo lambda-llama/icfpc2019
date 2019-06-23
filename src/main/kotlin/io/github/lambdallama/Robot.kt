@@ -38,7 +38,7 @@ data class Robot(
         // Example:
         // 310W4 <- here only 0 and 1 are visible, since
         //  WR
-        if (tentacles.none { grid[it].isObstacle }) {
+        if (tentacles.none { it !in grid || grid[it].isObstacle }) {
             return sequenceOf(position) + tentacles
         }
 
