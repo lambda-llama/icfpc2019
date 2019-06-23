@@ -7,12 +7,13 @@ object ClonePhase : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val clones = state.boosters.filter { it.value == BoosterType.C }
             .map { it.key }
-        val spawner = state.boosters.filter { it.value == BoosterType.X }
-            .keys.firstOrNull() ?: return
 
         val route = travelingSalesman(
-            state.robot.position, spawner, clones.toMutableSet(), state.grid
+            state.robot.position, clones.toMutableSet(), state.grid
         )!!
+        val spawner = state.boosters.filter { it.value == BoosterType.X }
+            .keys.minBy { it.manhattanDist(route.last()) } ?: return
+        route += shortestPath(route.last(), spawner, state.grid)!!.drop(1)
 
         for (move in route.toMoves()) {
             sink(listOf(move))
@@ -30,8 +31,9 @@ object ClonePhase : Strategy {
 
 object CloneExtenderPhase : Strategy {
     override fun run(state: State, sink: ActionSink) {
-        val spawner = state.boosters.filter { it.value == BoosterType.X }
-            .keys.firstOrNull() ?: return ExtenderPhase.run(state, sink)
+        val spawners = state.boosters.filter { it.value == BoosterType.X }
+            .keys
+        if (spawners.isEmpty()) return ExtenderPhase.run(state, sink)
 
         var hasClones = false
         val clones = state.boosters.filter { (it.value == BoosterType.C && run { hasClones = true; true }) || it.value == BoosterType.B }
@@ -39,8 +41,10 @@ object CloneExtenderPhase : Strategy {
         if (!hasClones) return ExtenderPhase.run(state, sink)
 
         val route = travelingSalesman(
-            state.robot.position, spawner, clones.toMutableSet(), state.grid
+            state.robot.position, clones.toMutableSet(), state.grid
         )!!
+        val spawner = spawners.minBy { it.manhattanDist(route.last()) }!!
+        route += shortestPath(route.last(), spawner, state.grid)!!.drop(1)
 
         for (move in route.toMoves()) {
             sink(listOf(move))
@@ -68,7 +72,7 @@ object ExtenderPhase : Strategy {
         if (clones.isEmpty()) return
 
         val route = travelingSalesman(
-            state.robot.position, clones.last(), clones.dropLast(1).toMutableSet(), state.grid
+            state.robot.position, clones.toMutableSet(), state.grid
         )!!
 
         for (move in route.toMoves()) {
@@ -117,10 +121,9 @@ fun List<Point>.toMoves(): List<Move> =
 
 fun travelingSalesman(
     start: Point,
-    end: Point,
     intermediate: MutableSet<Point>,
     grid: ByteMatrix
-): List<Point>? {
+): MutableList<Point>? {
     val path = mutableListOf(start)
     while (true) {
         val prev = path.last()
@@ -128,8 +131,7 @@ fun travelingSalesman(
         intermediate.remove(next)
         path += (shortestPath(prev, next, grid) ?: return null).drop(1)
     }
-    path += (shortestPath(path.last(), end, grid) ?: return null).drop(1)
-    assert(path.first() == start && path.last() == end)
+    assert(path.first() == start)
     return path
 }
 
