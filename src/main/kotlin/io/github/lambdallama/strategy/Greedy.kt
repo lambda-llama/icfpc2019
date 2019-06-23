@@ -66,15 +66,22 @@ interface Greedy : Strategy {
 object GreedyUnordered: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         for (v in path.drop(1)) {
-            val action = state.howTo(v)!!
-            sink(listOf(action))
-            state.apply(listOf(action))
+            state.howTo(v).forEach {
+                sink(listOf(it))
+                state.apply(listOf(it))
+            }
             if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
                 sink(listOf(attach))
                 state.apply(listOf(attach))
             }
         }
+        /*Uncomment when we are ready to do approx BFS in [route].
+        if (state.hasBooster(BoosterType.F)) {
+            state.apply(listOf(Accelerate))
+            sink(listOf(Accelerate))
+        }
+        */
     }
 }
 
@@ -165,7 +172,7 @@ interface GreedyFBPartition : Greedy {
     private fun Point.cost(state: State, distances: PointIntMap): Cost {
         val wrapable = state.robot.getVisiblePartsAt(state.grid, this)
             .count { state.grid[it] == Cell.FREE }
-        return Cost(distances[this], wrapable)
+        return Cost(distances.getOrDefault(this, Int.MAX_VALUE), wrapable)
     }
 
     override fun route(state: State): List<Point> {
@@ -191,10 +198,19 @@ interface GreedyFBPartition : Greedy {
     }
 }
 
-private fun State.howTo(v: Point): Action? {
+private fun State.howTo(v: Point): List<Action> {
     val u = robot.position
-    if (v in beacons) return Teleport(v)
-    return Move.ALL.firstOrNull { it(u) == v }
+    return if (v in beacons) {
+        listOf(Teleport(v))
+    } else {
+        val move = Move.ALL.firstOrNull { it(u) == v }
+        if (move == null) {
+            val moveMove = Move.ALL.first { it(it(u)) == v }
+            if (robot.fuelLeft > 0) listOf(moveMove) else listOf(moveMove, moveMove)
+        } else {
+            listOf(move)
+        }
+    }
 }
 
 private inline fun State.forEachReachable(u: Point, block: (Point) -> Unit) {
@@ -202,7 +218,17 @@ private inline fun State.forEachReachable(u: Point, block: (Point) -> Unit) {
     for (move in Move.ALL) {
         val v = move(u)
         if (v in grid && !grid[v].isObstacle) {
-            block(v)
+            if (robot.fuelLeft > 0) {  // Accelerated.
+                val w = move(v)
+                if (w in grid && !grid[w].isObstacle) {
+                    block(w)
+                } else {  // Second step is no-op.
+                    block(v)
+                }
+
+            } else {
+                block(v)
+            }
         }
     }
 }
@@ -241,44 +267,67 @@ object GreedyTurnoverFBPartition : GreedyFBPartition {
 object InstallUniformBeacons : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val teleports = state.boosters.filterValues { it == BoosterType.R }.keys
+        val fastWheels: Set<Point> = state.boosters.filterValues { it == BoosterType.F }.keys
         if (teleports.isNotEmpty()) {
             val grid = state.grid
             val distances = distanceToAll(state, state.robot.position)
             val targets = chunkify(grid, teleports.size).map { chunk ->
+                chunk.last()
                 val d = IntArray(chunk.size) { distances[chunk[it]] }
                 d.sort()  // Poorman's median.
                 val median = d[d.size / 2]
                 chunk.first { distances[it] == median }
             }
-            check(targets.none { BoosterType.X == state.boosters[it] })
+            check(targets.none { grid[it].isObstacle || BoosterType.X == state.boosters[it] })
             check(targets.size == teleports.size)
 
-            installBeacons(state, teleports, targets, sink)
+            installBeacons(state, teleports, targets, fastWheels, sink)
         }
     }
 
-    private fun installBeacons(state: State, teleports: Set<Point>, targets: List<Point>, sink: ActionSink) {
+    private fun installBeacons(
+        state: State,
+        teleports: Set<Point>,
+        targets: List<Point>,
+        fastWheels: Set<Point>,
+        sink: ActionSink
+    ) {
         val grid = state.grid
+        var collected = 0
         var installed = 0
         val q = PointSet(grid.dim)
         teleports.forEach(q::add)
-        while (q.isNotEmpty()) {
-            val distances = distanceToAll(state, state.robot.position)
-            val closest = q.asSequence().minBy { distances[it] }!!
-            if (closest in teleports) {
-                val path = state.bfs(state.robot.position) { it == closest }
-                check(path.isNotEmpty())
-                GreedyUnordered.follow(state, path, sink)
-                q.add(targets[installed++])
-            } else {  // closest in targets.
-                val path = state.bfs(state.robot.position) { it == closest }
-                check(path.isNotEmpty())
-                GreedyUnordered.follow(state, path, sink)
-                state.apply(listOf(InstallBeacon))
-                sink(listOf(InstallBeacon))
+        fastWheels.forEach(q::add)
+        while (installed < teleports.size) {
+            if (state.hasBooster(BoosterType.F)) {
+                state.apply(listOf(Accelerate))
+                sink(listOf(Accelerate))
             }
 
-            q.remove(closest)
+            val distances = distanceToAll(state, state.robot.position)
+            val next = q.asSequence().minBy { distances.getOrDefault(it, Int.MAX_VALUE) }!!
+            var path = state.bfs(state.robot.position) { it == next }
+            if (state.robot.fuelLeft > 0 && path.isEmpty()) {
+                // Hmm... are all paths of odd length? Try to reach next approx.
+                val neighborhood = Move.ALL.map { it(next) }.toTypedArray()
+                path = state.bfs(state.robot.position) { it in neighborhood }
+                // [next] is either one but last or at Manhattan distance 1 from it.
+                if (path[path.lastIndex - 1] != next) {
+                    path += next
+                }
+            }
+            check(path.isNotEmpty())
+            GreedyUnordered.follow(state, path, sink)
+            when (next) {
+                in teleports -> q.add(targets[collected++])
+                in targets -> {
+                    state.apply(listOf(InstallBeacon))
+                    sink(listOf(InstallBeacon))
+                    installed++
+                }
+            }
+
+            q.remove(next)
         }
     }
 }
