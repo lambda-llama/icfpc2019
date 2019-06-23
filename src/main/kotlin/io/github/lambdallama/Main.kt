@@ -33,7 +33,7 @@ fun nonInteractiveMain(
             GreedyUnorderedFBPartition,
             GreedyTurnoverFBPartition,
             CloneFactory,
-            phases(ClonePhase, WrapDistanceCount, name = "GreedyStateOptimizer"),
+            phases(ClonePhase, WrapDistanceCount),
             Weighted,
             WeightedAccelerated
     ).filter { strategyRegex.matches(it.name) } .map { strategy ->

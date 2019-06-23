@@ -1,1 +1,1 @@
-{"CloneFactory":1608,"GreedyStateOptimizer":1454,"GreedyTurnoverFBPartition":3211,"GreedyUnordered":3585,"GreedyUnorderedFBPartition":3037,"GreedyUnorderedTurnover":3485,"NaiveIterative":6944,"Weighted":3256,"WeightedAccelerated":3376,"bestTime":1454}
+{"CloneFactory":1608,"Phases<ClonePhase, Phases<ClonePhase, GreedyStateOptimizer>>":1454,"GreedyTurnoverFBPartition":3211,"GreedyUnordered":3585,"GreedyUnorderedFBPartition":3037,"GreedyUnorderedTurnover":3485,"NaiveIterative":6944,"Weighted":3256,"WeightedAccelerated":3376,"bestTime":1454}
