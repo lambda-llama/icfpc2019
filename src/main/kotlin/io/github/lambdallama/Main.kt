@@ -43,7 +43,7 @@ fun nonInteractiveMain(
             CloneFactory ->
                 // TODO(superbobry): HACK HACK HACK.
                 if ("clone" !in path) {
-                    return@map listOf<List<Action>>()
+                    return@map Pair(strategy, listOf<List<Action>>())
                 }
         }
 
@@ -51,17 +51,19 @@ fun nonInteractiveMain(
         val sw = Stopwatch.createStarted()
         strategy.run(state.clone()) { actions.add(it) }
         sw.stop()
-        System.err.println("${strategy.javaClass.simpleName}: ${actions.size}" +
+        println("${strategy.javaClass.simpleName}: ${actions.size}" +
                 " (${sw.toFormattedString()})")
-        actions
-    }.filter { it.isNotEmpty() }
+        Pair(strategy, actions)
+    }.filter { it.second.isNotEmpty() }
 
     val tempSolutionPath = path.substring(0, path.length - 5) + ".sol.tmp"
     val solutionFile = File(tempSolutionPath)
-    val best = solutions.minBy { it.size }!!
-    val solutionTime = best.size
+    val best = solutions.minBy { it.second.size }!!
+    val solutionTime = best.second.size
+    println("Best: $solutionTime (" + best.first.javaClass.simpleName.colorize(TerminalColors.BLUE) + ")")
+
     solutionFile.writeText(
-            best.transpose().joinToString("#") { it.filterNotNull().joinToString("") })
+            best.second.transpose().joinToString("#") { it.filterNotNull().joinToString("") })
 
     if (validate) {
         if (!validateSolution(path, tempSolutionPath, solutionTime)) {
