@@ -90,7 +90,8 @@ private fun State.toMap(): Map {
 
         },
         robots
-            .flatMap { robot -> robot.getVisibleParts(grid).map { it to Pill.ROBOT } }
+            .withIndex()
+            .flatMap { (idx, robot) -> robot.getVisibleParts(grid).map { it to Pill.ROBOTS[idx] } }
             + boosters.map { it.key to it.value.toPill() },
         collectedBoosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList(),
         robots.map { it.fuelLeft }
@@ -117,18 +118,36 @@ inline class UiCell(private val value: Byte) {
     }
 }
 
-inline class Pill(private val value: Byte) {
+open class Pill {
+    class RobotPill(val robot: Byte) : Pill() {
+        val color get(): Color = PALLETE[robot % PALLETE.size]
+    }
+
     companion object {
-        val ROBOT = Pill(0)
-        val BOOST_B = Pill(1)
-        val BOOST_F = Pill(2)
-        val BOOST_L = Pill(3)
-        val BOOST_X = Pill(4)
-        val BOOST_T = Pill(5)
-        val BOOST_R = Pill(6)
-        val BOOST_C = Pill(7)
+        val BOOST_B = Pill()
+        val BOOST_F = Pill()
+        val BOOST_L = Pill()
+        val BOOST_X = Pill()
+        val BOOST_T = Pill()
+        val BOOST_R = Pill()
+        val BOOST_C = Pill()
+        val ROBOTS = (0..42).map { RobotPill(it.toByte()) }
     }
 }
+
+private val PALLETE = listOf(
+    Color(246, 74, 138),
+    Color(115, 169, 194),
+    Color(102, 2, 60),
+    Color(255,200,124),
+    Color(0, 15, 137),
+    Color(77, 93, 83),
+    Color(251, 96, 127),
+    Color(0,255,255),
+    Color(255,203,164),
+    Color(179,27,27),
+    Color(255,153,102)
+)
 
 class ViewState(
     var map: Map?,
@@ -152,7 +171,7 @@ private class Ui {
         label.text = "Last Action: ${viewState.map?.lastAction ?: "N/A"}; " +
             "Boosters: ${viewState.map?.boosers.orEmpty().joinToString(", ")}; " +
             "Fuel: ${viewState.map?.fuel.orEmpty().joinToString(", ")}; " +
-            "Cell: (${viewState.mouseX / canvas.cellSize}, ${viewState.mouseY /canvas.cellSize})"
+            "Cell: (${viewState.mouseX / canvas.cellSize}, ${viewState.mouseY / canvas.cellSize})"
 
         frame.repaint()
     }
@@ -276,7 +295,7 @@ private class Canvas(val viewState: ViewState, val frameSize: () -> Dimension) :
         for ((point, pill) in map.pills) {
             val (x, y) = point
             val color = when (pill) {
-                Pill.ROBOT -> Color.RED
+                is Pill.RobotPill -> pill.color
                 Pill.BOOST_B -> Color.YELLOW
                 Pill.BOOST_F -> Color(210, 105, 30)
                 Pill.BOOST_L -> Color.GREEN
@@ -288,7 +307,7 @@ private class Canvas(val viewState: ViewState, val frameSize: () -> Dimension) :
             }
             g.color = color
             val (px, py) = map.topLeftCorner(x, y)
-            if (pill == Pill.ROBOT) {
+            if (pill is Pill.RobotPill) {
                 g.fillRect(
                     px + cellSize / 4,
                     py + cellSize / 4,

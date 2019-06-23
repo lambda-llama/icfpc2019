@@ -176,5 +176,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    phases(CloneExtenderPhase, WrapDistanceCount).run(state, visualize(state, true))
+    CloneFactory.run(state, visualize(state, true))
 }
