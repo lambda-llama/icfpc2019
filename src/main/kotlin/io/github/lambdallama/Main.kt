@@ -34,7 +34,8 @@ fun nonInteractiveMain(
             GreedyTurnoverFBPartition,
             CloneFactory,
             WrapDistanceCount,
-            Weighted
+            Weighted,
+            WeightedAccelerated
     ).filter { strategyRegex.matches(it.javaClass.simpleName) } .map { strategy ->
         val name = strategy.javaClass.simpleName
         when (strategy) {

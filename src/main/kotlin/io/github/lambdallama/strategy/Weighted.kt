@@ -43,16 +43,17 @@ private inline fun ByteMatrix.bfs(
 private val ACTIONS = arrayOf(MoveUp, MoveDown, MoveLeft, MoveRight, TurnClockwise, TurnCounter)
 private val MOVES = ACTIONS.filterIsInstance<Move>()
 
-object Weighted: Strategy {
+private const val DEPTH = 3
+private const val EXTENDER_PICKUP_SCORE = 1000
+private const val ACCELERATION_PICKUP_SCORE = 500
+private const val DEFAULT_CELL_WEIGHT: Byte = 10
+private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 100
+private const val CELL_WEIGHT_DECAY = 0.9
+private const val PREPROCESS_PASS_COUNT = 10
+
+open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
     private var weights: ByteMatrix = ByteMatrix(0, 0, Cell.VOID)
     private var wrapableCellsLeft: Int = 0
-
-    private const val DEPTH = 3
-    private const val EXTENDER_PICKUP_SCORE = 1000
-    private const val DEFAULT_CELL_WEIGHT: Byte = 10
-    private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 100
-    private const val CELL_WEIGHT_DECAY = 0.9
-    private const val PREPROCESS_PASS_COUNT = 10
 
     override fun run(state: State, sink: ActionSink) {
         val execute = { a: Action ->
@@ -62,14 +63,39 @@ object Weighted: Strategy {
 
         precomputeWeights(state)
 
-        var pathToNextFreeCell = mutableListOf<Action>()
+        var pathToNextFreeCell = mutableListOf<Move>()
         while (wrapableCellsLeft > 0) {
             if (state.hasBooster(BoosterType.B)) {
                 execute(Attach(state.robot.attachmentPoint()))
                 continue
             }
 
+            if (enableAcceleration && state.hasBooster(BoosterType.F)) {
+                execute(Accelerate)
+                continue
+            }
+
             if (pathToNextFreeCell.isNotEmpty()) {
+                if (state.robot.fuelLeft > 0) {
+                    val next = pathToNextFreeCell.last()
+                    // If we want to move twice - do it
+                    if (pathToNextFreeCell.size >= 2 && next == pathToNextFreeCell[pathToNextFreeCell.size - 2]) {
+                        execute(pathToNextFreeCell.removeLast())
+                        pathToNextFreeCell.removeLast()
+                        continue
+                    }
+                    // If we want to move once and we know we'll hit wall - do it
+                    val newPosition = next.invoke(next.invoke(state.robot.position))
+                    if (newPosition in state.grid && state.grid[newPosition].isObstacle) {
+                        execute(pathToNextFreeCell.removeLast())
+                        continue
+                    }
+                    // TODO: take acceleration into account when building path?
+                    // For now, just burn fuel
+                    while (state.robot.fuelLeft > 0) {
+                        execute(NoOp)
+                    }
+                }
                 execute(pathToNextFreeCell.removeLast())
                 continue
             }
@@ -81,7 +107,7 @@ object Weighted: Strategy {
                 pathToNextFreeCell = state.grid
                         .bfs(state.robot.position) { state.grid[it].isWrapable }
                         .drop(1)
-                        .fold(Pair(state.robot.position, mutableListOf<Action>()), { (prev, list), curr ->
+                        .fold(Pair(state.robot.position, mutableListOf<Move>()), { (prev, list), curr ->
                             list.add(MOVES.first { it(prev) == curr })
                             Pair(curr, list)
                         }).second
@@ -146,6 +172,9 @@ object Weighted: Strategy {
         if (action.pickedUpBooster == BoosterType.B) {
             score += EXTENDER_PICKUP_SCORE
         }
+        if (enableAcceleration && action.pickedUpBooster == BoosterType.F) {
+            score += ACCELERATION_PICKUP_SCORE
+        }
         return score
     }
 
@@ -189,5 +218,8 @@ object Weighted: Strategy {
         }
     }
 }
+
+object Weighted: WeightedBase(enableAcceleration = false)
+object WeightedAccelerated: WeightedBase(enableAcceleration = true)
 
 fun ByteMatrix.neighbours(u: Point) = Move.ALL.map { it(u) }.filter { it in this }
