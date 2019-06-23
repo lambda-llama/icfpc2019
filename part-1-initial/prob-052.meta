@@ -1,1 +1,1 @@
-{"GreedyStateOptimizer":2975,"GreedyTurnoverFBPartition":2935,"GreedyUnordered":3034,"GreedyUnorderedFBPartition":2834,"GreedyUnorderedTurnover":2967,"NaiveIterative":6800,"Weighted":2815,"bestTime":2815}
+{"GreedyStateOptimizer":2975,"GreedyTurnoverFBPartition":2935,"GreedyUnordered":3034,"GreedyUnorderedFBPartition":2834,"GreedyUnorderedTurnover":2967,"NaiveIterative":6800,"Weighted":2815,"WeightedAccelerated":3055,"bestTime":2815}
