@@ -36,26 +36,24 @@ data class Robot(
         // Example:
         // 310W4 <- here only 0 and 1 are visible, since
         //  WR
-
-        val parts =
-            tentacles.map { tentacle ->
-                tentacle.rotate(orientation) + position
-            }
-
-        var idx = 0
+        val robotDelta = -tentacles[0].rotate(orientation)
         val hitWall = mutableListOf(false, false)
-        val robotDelta = this.position - parts[0]
-        return listOf(this.position) + parts.filter { p ->
+        val parts = ArrayList<Point>(tentacles.size + 1)
+        parts.add(position)
+        for ((idx, tentacle) in tentacles.withIndex()) {
+            val p = tentacle.rotate(orientation) + position
             val wall = p !in grid || grid[p].isObstacle
             val pr = p + robotDelta
             val robotLevelWall = pr !in grid || grid[pr].isObstacle
             if (idx > 0) {
                 hitWall[idx % 2] = hitWall[idx % 2] || wall || robotLevelWall
             }
-            val result = !wall && (idx < 3 || !hitWall[idx % 2])
-            idx++
-            result
+
+            if (!wall && (idx < 3 || !hitWall[idx % 2])) {
+                parts.add(p)
+            }
         }
+        return parts
     }
 
     fun attachTentacle(at: Point) {
