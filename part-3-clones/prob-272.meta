@@ -1,1 +1,1 @@
-{"Phases<CloneExtenderPhase, GreedyStateOptimizer>":7932,"bestTime":7932}
+{"CloneFactory":7902,"GreedyUnorderedFBPartition":22536,"GreedyUnorderedTurnover":22596,"Phases<CloneExtenderPhase, GreedyStateOptimizer>":7932,"Phases<CloneExtenderPhase, SimpleStateOptimizer>":7101,"Phases<ClonePhase, SimpleStateOptimizer>":7354,"Phases<ExtenderPhase, GreedyUnorderedFBPartition>":21374,"Phases<InstallUniformBeacons, GreedyTurnoverFBPartition>":23098,"Phases<InstallUniformBeacons, GreedyUnorderedFBPartition>":24113,"bestTime":7101}
