@@ -4,6 +4,10 @@ import io.github.lambdallama.strategy.*
 import io.github.lambdallama.ui.launchGui
 import io.github.lambdallama.ui.visualize
 import java.io.File
+import java.nio.file.CopyOption
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 fun nonInteractiveMain(
         path: String,
@@ -37,28 +41,66 @@ fun nonInteractiveMain(
             CloneFactory ->
                 // TODO(superbobry): HACK HACK HACK.
                 if ("clone" !in path) {
-                    return@map mutableListOf<List<Action?>>()
+                    return@map listOf<List<Action>>()
                 }
         }
 
-        val actions = mutableListOf<List<Action?>>()
+        val actions = mutableListOf<List<Action>>()
         strategy.run(state.clone()) { actions.add(it) }
         System.err.println("${strategy.javaClass.simpleName}: ${actions.size}")
         actions
     }.filter { it.isNotEmpty() }
 
-    val solutionPath = path.substring(0, path.length - 5) + ".sol"
-    val solutionFile = File(solutionPath)
-    val best: List<List<Action?>> = solutions.minBy { it.size }!!.transpose()
+    val tempSolutionPath = path.substring(0, path.length - 5) + ".sol.tmp"
+    val solutionFile = File(tempSolutionPath)
+    val best = solutions.minBy { it.size }!!
+    val solutionTime = best.size
     solutionFile.writeText(
-        best.joinToString("#") { it.filterNotNull().joinToString("") })
+            best.transpose().joinToString("#") { it.filterNotNull().joinToString("") })
 
     if (validate) {
         print("Validating... ")
-        when (val validationResult = validateWithJsValidator(path, solutionPath)) {
-            is JsValidatorResult.Success -> println("OK, ${validationResult.time}")
-            is JsValidatorResult.Failure -> println("ERROR: ${validationResult.error}")
+        when (val validationResult = validateWithJsValidator(path, tempSolutionPath)) {
+            is JsValidatorResult.Success -> {
+                println("OK, ${validationResult.time}")
+                check(solutionTime == validationResult.time)
+            }
+            is JsValidatorResult.Failure -> {
+                println("ERROR: ${validationResult.error}")
+                return
+            }
         }
+    }
+
+    val metadata = SolutionMetadata.parse(path.substring(0, path.length - 5) + ".meta")
+    when {
+        solutionTime > metadata.bestTime ->
+            println("WARNING: efficiency degradation ($solutionTime > ${metadata.bestTime})," +
+                " NOT replacing the solution file")
+        solutionTime < metadata.bestTime -> {
+            println("Efficiency improvement ($solutionTime < ${metadata.bestTime}), " +
+                    "replacing the solution file")
+            if (!validate) {
+                // Validate anyway, maybe have an extra flag to never ever validate?
+                when (val validationResult = validateWithJsValidator(path, tempSolutionPath)) {
+                    is JsValidatorResult.Success -> {
+                        println("OK: New solution validated")
+                        check(solutionTime == validationResult.time)
+                    }
+                    is JsValidatorResult.Failure -> {
+                        println("ERROR: New solution failed validation: ${validationResult.error}")
+                        return
+                    }
+                }
+            }
+            val solutionPath = path.substring(0, path.length - 5) + ".sol"
+            Files.move(Paths.get(tempSolutionPath), Paths.get(solutionPath), StandardCopyOption.REPLACE_EXISTING)
+            metadata.bestTime = solutionTime
+            metadata.saveToDisk()
+        }
+        else ->
+            // TODO: maybe check if the files are different and keep if they are?
+            Files.delete(Paths.get(tempSolutionPath))
     }
 }
 

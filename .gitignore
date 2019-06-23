@@ -6,3 +6,4 @@ out
 solutions
 lambda-client/blocks
 lambda-client/*.sol
+*.sol.tmp
