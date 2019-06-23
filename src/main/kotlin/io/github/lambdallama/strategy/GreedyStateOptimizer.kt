@@ -79,19 +79,19 @@ typealias PointPredicate = (State, Point) -> Boolean
 
 fun distance(state: State, from: Robot, targetPointPredicate: PointPredicate): Int? {
     val grid = state.grid
-    val d = mutableMapOf<Point, Int>()
+    val d = PointIntMap(grid.dim)
     val q = PointDeque()
     d[from.position] = 0
     q.addLast(from.position)
     while (q.isNotEmpty()) {
         val u = q.removeFirst()
         if (targetPointPredicate(state, u)) {
-            return d[u]!!
+            return d[u]
         }
         for (move in MOVES) {
             val v = move(u)
             if (v in grid && !grid[v].isObstacle) {
-                var du = d[u]!! + 1
+                val du = d[u] + 1
                 if (d.getOrDefault(v, Int.MAX_VALUE) > du) {
                     d[v] = du
                     q.addLast(v)
