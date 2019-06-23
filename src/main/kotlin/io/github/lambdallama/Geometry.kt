@@ -1,48 +1,9 @@
 package io.github.lambdallama
 
 import com.google.common.collect.ArrayListMultimap
-import java.util.*
-import kotlin.NoSuchElementException
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
-
-/*
-inline class Point(val xy: Long) {
-    val x: Int get() = (xy ushr 32).toInt()
-    val y: Int get() = xy.toInt()
-
-    operator fun component1() = x
-    operator fun component2() = y
-
-    operator fun plus(other: Point): Point = Point(x + other.x, y + other.y)
-    operator fun minus(other: Point): Point = Point(x - other.x, y - other.y)
-    operator fun times(other: Point): Int = x * other.x + y * other.y
-
-    fun manhattanDist(other: Point): Int =
-        (x - other.x).absoluteValue + (y - other.y).absoluteValue
-
-    fun rotate(orientation: Orientation) = Point(orientation.ax * this, orientation.ay * this)
-
-    fun reverseRotate(orientation: Orientation) = rotate(orientation.opposite)
-
-    override fun toString() = "($x,$y)"
-
-    companion object {
-        fun parse(s: String): Point {
-            check(s.first() == '(' && s.last() == ')')
-            val (x, y) = s.slice(1 until s.length - 1).split(',', limit = 2)
-            return Point(x.toInt(), y.toInt())
-        }
-
-        operator fun invoke(x: Int, y: Int): Point {
-            val p = Point(x.toLong() shl 32 or (y.toLong() and 0xffffffffL))
-            check(p.x == x && p.y == y)
-            return p
-        }
-    }
-}
-*/
 
 data class Point(val x: Int, val y: Int) {
     operator fun plus(other: Point): Point = Point(x + other.x, y + other.y)
@@ -64,57 +25,6 @@ data class Point(val x: Int, val y: Int) {
             val (x, y) = s.slice(1 until s.length - 1).split(',', limit = 2)
             return Point(x.toInt(), y.toInt())
         }
-    }
-}
-
-class PointSet(val dim: Point) {
-    private val buf = BitSet(dim.x * dim.y)
-
-    fun add(p: Point) = buf.set(p.y * dim.x + p.x)
-
-    operator fun contains(p: Point): Boolean = buf.get(p.y * dim.x + p.x)
-
-    fun asSequence(): Sequence<Point> {
-        var offset = 0
-        return generateSequence {
-            val idx = buf.nextSetBit(offset)
-            if (idx < 0) null else {
-                val y = idx / dim.x
-                val x = idx - y * dim.x
-                offset = idx + 1
-                Point(x, y)
-            }
-        }
-    }
-}
-
-class PointIntMap(val dim: Point) {
-    // Assumption: Int.MAX_VALUE is the missing value.
-    private val buf = IntArray(dim.x * dim.y).apply { fill(MISSING) }
-
-    private fun getInternal(p: Point) = buf[p.y * dim.x + p.x]
-
-    operator fun get(p: Point): Int {
-        val value = getInternal(p)
-        return if (value != MISSING) value else {
-            throw NoSuchElementException()
-        }
-    }
-
-    fun getOrDefault(p: Point, default: Int): Int {
-        val value = getInternal(p)
-        return if (value != MISSING) value else default
-    }
-
-    operator fun set(p: Point, value: Int) {
-        require(value != MISSING)
-        buf[p.y * dim.x + p.x] = value
-    }
-
-    operator fun contains(p: Point) = getInternal(p) != MISSING
-
-    companion object {
-        private const val MISSING = Int.MAX_VALUE
     }
 }
 

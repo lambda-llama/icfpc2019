@@ -133,16 +133,15 @@ object GreedyUnorderedTurnover: Greedy {
 }
 
 /** Partition the matrix into components of connected FREE/Booster cells. */
-fun ByteMatrix.fbPartition(): List<PointSet> {
-    val components = mutableListOf<PointSet>()
-    val seen = PointSet(dim)
+fun ByteMatrix.fbPartition(): List<Set<Point>> {
+    val components = mutableListOf<Set<Point>>()
+    val seen = mutableSetOf<Point>()
     for (x in 0 until dim.x) {
         for (y in 0 until dim.y) {
             val initial = Point(x, y)
             if (initial !in seen
                 && !this[initial].isObstacle && this[initial] != Cell.WRAPPED) {
-                val component = PointSet(dim)
-                component.add(initial)
+                val component = mutableSetOf(initial)
                 val q = ArrayDeque<Point>()
                 q.addLast(initial)
                 while (q.isNotEmpty()) {
@@ -173,8 +172,8 @@ interface GreedyFBPartition : Greedy {
             .result()
     }
 
-    private fun Point.cost(state: State, distances: PointIntMap): Cost {
-        return Cost(distances[this], state.robot.countWrapableAt(this, state.grid))
+    private fun Point.cost(state: State, distances: Map<Point, Int>): Cost {
+        return Cost(distances[this]!!, state.robot.countWrapableAt(this, state.grid))
     }
 
     override fun route(state: State): List<Point> {
@@ -186,10 +185,10 @@ interface GreedyFBPartition : Greedy {
             else -> {
                 val distances = distanceToAll(grid, state.robot.position)
                 val closestComponent = components.minBy { component ->
-                    component.asSequence().map { it.cost(state, distances) }.max()!!
+                    component.map { it.cost(state, distances) }.max()!!
                 }!!
 
-                val closestPoint = closestComponent.asSequence().minBy { it.cost(state, distances) }!!
+                val closestPoint = closestComponent.minBy { it.cost(state, distances) }!!
                 val path = grid.bfs(state.robot.position) { it == closestPoint }
                 check(path.isNotEmpty())
                 return path
@@ -197,9 +196,9 @@ interface GreedyFBPartition : Greedy {
         }
     }
 
-    private fun distanceToAll(grid: ByteMatrix, initial: Point): PointIntMap {
+    private fun distanceToAll(grid: ByteMatrix, initial: Point): Map<Point, Int> {
         val maxDistance = grid.dim.x * grid.dim.y
-        val distances = PointIntMap(grid.dim)
+        val distances = HashMap<Point, Int>(maxDistance)
         distances[initial] = 0
         val q = ArrayDeque<Point>()
         q.addLast(initial)
@@ -208,7 +207,7 @@ interface GreedyFBPartition : Greedy {
             for (move in MOVES) {
                 val v = move(u)
                 if (v in grid && !grid[v].isObstacle) {
-                    val alternative = distances[u] + 1
+                    val alternative = distances[u]!! + 1
                     if (alternative < distances.getOrDefault(v, maxDistance)) {
                         distances[v] = alternative
                         q.addLast(v)
