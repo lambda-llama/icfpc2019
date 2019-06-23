@@ -7,14 +7,13 @@ typealias StateFunction = (State, Robot) -> Double
 typealias ActionPolicy = (State, Robot) -> List<Action>
 
 class GreedyStateOptimizer(
-        val stateFunction: StateFunction,
-        val actionPolicy: ActionPolicy
+    val stateFunction: StateFunction,
+    val actionPolicy: ActionPolicy
 ) : Strategy {
 
-    override fun run(state: State, sink: ActionSink) {
-        ClonePhase.run(state, sink)
+    override fun run(currentState: State, sink: ActionSink) {
+        ClonePhase.run(currentState, sink)
 
-        val currentState = state.clone()
         var isTerminal = false
         while (!isTerminal) {
             isTerminal = true
@@ -24,13 +23,12 @@ class GreedyStateOptimizer(
                 val robot = currentState.robots[robotIndex]
                 val moves = actionPolicy(currentState, robot)
                 val best = moves
-                        .map { move ->
-                            val nextState = currentState.clone()
-                            var nextStateRobot = nextState.robots[robotIndex]
-                            nextState.apply(nextStateRobot, move)
-                            val q = stateFunction(nextState, nextStateRobot)
-                            q to move
-                        }.maxBy { it.first }
+                    .map { move ->
+                        val unmove = currentState.apply(robot, move)
+                        val q = stateFunction(currentState, robot)
+                        currentState.unapply(robot, unmove)
+                        q to move
+                    }.maxBy { it.first }
                 if (best == null) {
                     robotMoves.add(NoOp)
                 } else {
@@ -119,20 +117,20 @@ fun hasTentacleBonus(state: State, p: Point): Boolean {
 }
 
 val WrapDistanceCount = GreedyStateOptimizer(
-        stateFunction = { state: State, robot: Robot ->
-            val dw = distance(
-                    state, from = robot,
-                    targetPointPredicate = ::isWrapable
-            )?.toDouble() ?: 0.0
-            val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
+    stateFunction = { state: State, robot: Robot ->
+        val dw = distance(
+            state, from = robot,
+            targetPointPredicate = ::isWrapable
+        )?.toDouble() ?: 0.0
+        val nDw = dw / (state.grid.dim.x * state.grid.dim.y)
 
-            val dB = distance(
-                    state, from = robot,
-                    targetPointPredicate = ::hasTentacleBonus
-            )?.toDouble() ?: 0.0
-            val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y)
+        val dB = distance(
+            state, from = robot,
+            targetPointPredicate = ::hasTentacleBonus
+        )?.toDouble() ?: 0.0
+        val nDb = dB / (2 * state.grid.dim.x * state.grid.dim.y)
 
-            wrappedCount(state) - nDw - nDb
-        },
-        actionPolicy = ::moveAndTurn
+        wrappedCount(state) - nDw - nDb
+    },
+    actionPolicy = ::moveAndTurn
 )
