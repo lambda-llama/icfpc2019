@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit
 
 fun nonInteractiveMain(
         path: String,
+        strategyRegex: Regex,
         validate: Boolean,
         showBonusCount: Boolean,
         infoOnly: Boolean
@@ -34,7 +35,7 @@ fun nonInteractiveMain(
             CloneFactory,
             WrapDistanceCount,
             Weighted
-    ).map { strategy ->
+    ).filter { strategyRegex.matches(it.javaClass.simpleName) } .map { strategy ->
         val name = strategy.javaClass.simpleName
         when (strategy) {
 //            GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->
@@ -152,18 +153,24 @@ fun main(args: Array<String>) {
             var validate = false
             var showBonusCount = false
             var infoOnly = false
-            for (arg in args.dropLast(1)) {
-                when (arg) {
+            var strategyRegex = ".*"
+            val extra = args.dropLast(1).toMutableList()
+            while (extra.isNotEmpty()) {
+                when (extra.removeAt(0)) {
                     "--validate" -> validate = true
                     "--show_bonus_count" ->  showBonusCount = true
                     "--info_only" -> infoOnly = true
+                    "--strategy" -> {
+                        strategyRegex = extra.removeAt(0)
+                    }
                 }
             }
             return nonInteractiveMain(
                     path=args.last(),
                     validate=validate,
                     showBonusCount = showBonusCount,
-                    infoOnly = infoOnly
+                    infoOnly = infoOnly,
+                    strategyRegex = Regex(strategyRegex, RegexOption.IGNORE_CASE)
             )
         }
         "--generate" -> {
