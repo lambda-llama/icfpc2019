@@ -8,7 +8,7 @@ private inline fun ByteMatrix.bfs(
         initial: Point,
         shouldStop: (Point) -> Boolean): List<Point> {
     val backtrack = mutableMapOf<Point, Point?>(initial to null)
-    val q = ArrayDeque<Point>()
+    val q = PointDeque()
     q.addLast(initial)
     var u: Point? = initial
     while (q.isNotEmpty()) {

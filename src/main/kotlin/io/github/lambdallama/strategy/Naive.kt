@@ -31,10 +31,10 @@ object NaiveIterative : Strategy {
     override fun run(state: State, sink: ActionSink) {
         val grid = state.grid.clone()
         val initial = state.robot.position
-        val q = ArrayDeque<Point>()
+        val q = PointDeque()
         q.addFirst(initial)
         while (q.isNotEmpty()) {
-            val u = q.first
+            val u = q.getFirst()
             grid[u] = VISITED
             val move = MOVES.firstOrNull { move ->
                 move(u).let { it in grid && grid[it].canVisit }
@@ -43,7 +43,7 @@ object NaiveIterative : Strategy {
             if (move == null) {
                 q.removeFirst()
                 if (q.isNotEmpty()) {
-                    val v = q.peekFirst()
+                    val v = q.getFirst()
                     sink(listOf(MOVES.first { it(v) == u }.flipped))
                 }
             } else {

@@ -1,6 +1,8 @@
 package io.github.lambdallama
 
+import com.carrotsearch.hppc.IntArrayDeque
 import com.google.common.collect.ArrayListMultimap
+import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
@@ -25,6 +27,81 @@ data class Point(val x: Int, val y: Int) {
             val (x, y) = s.slice(1 until s.length - 1).split(',', limit = 2)
             return Point(x.toInt(), y.toInt())
         }
+    }
+}
+
+class PointSet(private val dim: Point) {
+    private val buf = BitSet(dim.x * dim.y)
+
+    fun add(p: Point) = buf.set(p.y * dim.x + p.x)
+
+    operator fun contains(p: Point) = buf.get(p.y * dim.x + p.x)
+
+    fun asSequence(): Sequence<Point> {
+        var offset = 0
+        return generateSequence {
+            val idx = buf.nextSetBit(offset)
+            if (idx < 0) null else {
+                val y = idx / dim.x
+                val x = idx - y * dim.x
+                check(y * dim.x + x == idx)
+                offset = idx + 1
+                Point(x, y)
+            }
+        }
+    }
+}
+
+class PointDeque(capacity: Int = 4) {
+    private val deque = IntArrayDeque(capacity)
+
+    fun addFirst(p: Point) = deque.addFirst(p.xy)
+    fun addLast(p: Point) = deque.addLast(p.xy)
+    fun removeFirst() = Point(deque.removeFirst())
+    fun removeLast() = Point(deque.removeLast())
+    fun getFirst() = Point(deque.first)
+    fun getLast() = Point(deque.last)
+
+    fun isEmpty() = deque.isEmpty
+    fun isNotEmpty() = !isEmpty()
+
+    companion object {
+        private inline val Point.xy: Int get() = (x shl 16) or (y and 0xffff)
+
+        private operator fun Point.Companion.invoke(xy: Int): Point {
+            return Point(x = xy shr 16, y = xy.toShort().toInt())
+        }
+
+    }
+}
+
+class PointIntMap(val dim: Point) {
+    // Assumption: Int.MAX_VALUE is the missing value.
+    private val buf = IntArray(dim.x * dim.y).apply { fill(MISSING) }
+
+    private fun getInternal(p: Point) = buf[p.y * dim.x + p.x]
+
+    operator fun get(p: Point): Int {
+        val value = getInternal(p)
+        return if (value != MISSING) value else {
+            throw NoSuchElementException()
+        }
+    }
+
+    fun getOrDefault(p: Point, default: Int): Int {
+        val value = getInternal(p)
+        return if (value != MISSING) value else default
+    }
+
+    operator fun set(p: Point, value: Int) {
+        require(value != MISSING)
+        buf[p.y * dim.x + p.x] = value
+    }
+
+    operator fun contains(p: Point) = getInternal(p) != MISSING
+
+    companion object {
+        private const val MISSING = Int.MAX_VALUE
     }
 }
 

@@ -110,12 +110,12 @@ fun travelingSalesman(
 
 fun shortestPath(start: Point, end: Point, grid: ByteMatrix): List<Point>? {
     val prev = mutableMapOf(start to start)
-    val work = ArrayDeque<Point>()
-    work.add(start)
+    val work = PointDeque()
+    work.addLast(start)
 
     outer@
     while (work.isNotEmpty()) {
-        val u = work.pollFirst()
+        val u = work.removeFirst()
         for (v in grid.freeNeighbours(u).filter { it !in prev }) {
             prev[v] = u
             work.addLast(v)
@@ -170,10 +170,10 @@ fun chunkify(grid: ByteMatrix, n: Int): List<List<Point>> {
 
 fun bfs(point: Point, grid: ByteMatrix): Sequence<Point> = sequence {
     val visited = mutableSetOf<Point>()
-    val work = ArrayDeque<Point>()
+    val work = PointDeque()
     work.addLast(point)
     while (!work.isEmpty()) {
-        val u = work.pollFirst()
+        val u = work.removeFirst()
         yield(u)
         for (v in grid.freeNeighbours(u).filter { it !in visited }) {
             work.addLast(v)
