@@ -1,1 +1,1 @@
-{"Phases<CloneExtenderPhase, GreedyStateOptimizer>":8975,"Weighted":8482,"bestTime":8482}
+{"Phases<CloneExtenderPhase, GreedyStateOptimizer>":8975,"Phases<ExtenderPhase, FillAndExplore>":7545,"Weighted":8482,"bestTime":7545}
