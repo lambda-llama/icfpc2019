@@ -63,12 +63,6 @@ interface Greedy : Strategy {
     fun follow(state: State, path: List<Point>, sink: ActionSink)
 }
 
-private fun Robot.countWrapableAt(p: Point, grid: ByteMatrix): Int {
-    val clone = this.clone()
-    clone.position = p
-    return clone.getVisibleParts(grid).count { grid[it] == Cell.FREE }
-}
-
 object GreedyUnordered: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         for (v in path.drop(1)) {
@@ -169,7 +163,9 @@ interface GreedyFBPartition : Greedy {
     }
 
     private fun Point.cost(state: State, distances: PointIntMap): Cost {
-        return Cost(distances[this], state.robot.countWrapableAt(this, state.grid))
+        val wrapable = state.robot.getVisiblePartsAt(state.grid, this)
+            .count { state.grid[it] == Cell.FREE }
+        return Cost(distances[this], wrapable)
     }
 
     override fun route(state: State): List<Point> {

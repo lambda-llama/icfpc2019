@@ -91,7 +91,7 @@ private fun State.toMap(): Map {
         },
         robots
             .withIndex()
-            .flatMap { (idx, robot) -> robot.getVisibleParts(grid).map { it to Pill.ROBOTS[idx] } }
+            .flatMap { (idx, robot) -> robot.getVisibleParts(grid).map { it to Pill.ROBOTS[idx] }.toList() }
             + boosters.map { it.key to it.value.toPill() },
         collectedBoosters.asSequence().flatMap { generateSequence { it.key }.take(it.value) }.toList(),
         robots.map { it.fuelLeft }

@@ -25,7 +25,9 @@ data class Robot(
         orientation = orientation.rotate(rotation)
     }
 
-    fun getVisibleParts(grid: ByteMatrix): List<Point> {
+    fun getVisibleParts(grid: ByteMatrix) = getVisiblePartsAt(grid, position)
+
+    fun getVisiblePartsAt(grid: ByteMatrix, position: Point): Sequence<Point> {
         // TODO: this is a quick, dirty visibility check with false negatives
         // 31024 <- tentacle indices, the algorithm depends on this order
         //   R
@@ -36,24 +38,28 @@ data class Robot(
         // Example:
         // 310W4 <- here only 0 and 1 are visible, since
         //  WR
-        val robotDelta = -tentacles[0].rotate(orientation)
-        val hitWall = mutableListOf(false, false)
-        val parts = ArrayList<Point>(tentacles.size + 1)
-        parts.add(position)
-        for ((idx, tentacle) in tentacles.withIndex()) {
-            val p = tentacle.rotate(orientation) + position
-            val wall = p !in grid || grid[p].isObstacle
-            val pr = p + robotDelta
-            val robotLevelWall = pr !in grid || grid[pr].isObstacle
-            if (idx > 0) {
-                hitWall[idx % 2] = hitWall[idx % 2] || wall || robotLevelWall
-            }
-
-            if (!wall && (idx < 3 || !hitWall[idx % 2])) {
-                parts.add(p)
-            }
+        if (tentacles.none { grid[it].isObstacle }) {
+            return sequenceOf(position) + tentacles
         }
-        return parts
+
+        val robotDelta = -tentacles[0].rotate(orientation)
+        val hitWall = booleanArrayOf(false, false)
+        var idx = 0
+        val visible = tentacles.asSequence()
+            .map { it.rotate(orientation) + position }
+            .filter { p ->
+                val wall = p !in grid || grid[p].isObstacle
+                val pr = p + robotDelta
+                val robotLevelWall = pr !in grid || grid[pr].isObstacle
+                if (idx > 0) {
+                    hitWall[idx % 2] = hitWall[idx % 2] || wall || robotLevelWall
+                }
+
+                val result = !wall && (idx < 3 || !hitWall[idx % 2])
+                idx++
+                result
+            }
+        return sequenceOf(position) + visible
     }
 
     fun attachTentacle(at: Point) {
