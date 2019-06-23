@@ -66,9 +66,12 @@ interface Greedy : Strategy {
 object GreedyUnordered: Greedy {
     override fun follow(state: State, path: List<Point>, sink: ActionSink) {
         for (v in path.drop(1)) {
-            state.howTo(v).forEach {
-                sink(listOf(it))
-                state.apply(listOf(it))
+            state.howTo(v).forEach { action ->
+                // Wait until F is over if NoOp.
+                repeat(if (action == NoOp) state.robot.fuelLeft else 1) {
+                    sink(listOf(action))
+                    state.apply(listOf(action))
+                }
             }
             if (state.hasBooster(BoosterType.B)) {
                 val attach = Attach(state.robot.attachmentPoint())
@@ -76,12 +79,11 @@ object GreedyUnordered: Greedy {
                 state.apply(listOf(attach))
             }
         }
-        /*Uncomment when we are ready to do approx BFS in [route].
-        if (state.hasBooster(BoosterType.F)) {
+        /* Sad. So sad, but this doesn't help.
+        if (state.robot.fuelLeft == 0 && state.hasBooster(BoosterType.F)) {
             state.apply(listOf(Accelerate))
             sink(listOf(Accelerate))
-        }
-        */
+        } */
     }
 }
 
@@ -190,7 +192,7 @@ interface GreedyFBPartition : Greedy {
                 }!!
 
                 val closestPoint = closestComponent.asSequence().minBy { it.cost(state, distances) }!!
-                val path = state.bfs(state.robot.position) { it == closestPoint }
+                val path = state.approxBfsTo(closestPoint)
                 check(path.isNotEmpty())
                 return path
             }
@@ -200,15 +202,17 @@ interface GreedyFBPartition : Greedy {
 
 private fun State.howTo(v: Point): List<Action> {
     val u = robot.position
-    return if (v in beacons) {
-        listOf(Teleport(v))
-    } else {
-        val move = Move.ALL.firstOrNull { it(u) == v }
-        if (move == null) {
-            val moveMove = Move.ALL.first { it(it(u)) == v }
-            if (robot.fuelLeft > 0) listOf(moveMove) else listOf(moveMove, moveMove)
-        } else {
-            listOf(move)
+    return when (v) {
+        u -> listOf(NoOp)
+        in beacons -> listOf(Teleport(v))
+        else -> {
+            val move = Move.ALL.firstOrNull { it(u) == v }
+            if (move == null) {
+                val moveMove = Move.ALL.first { it(it(u)) == v }
+                if (robot.fuelLeft > 0) listOf(moveMove) else listOf(moveMove, moveMove)
+            } else {
+                listOf(move)
+            }
         }
     }
 }
@@ -299,12 +303,11 @@ object InstallUniformBeacons : Strategy {
         val grid = state.grid
         var collected = 0
         var installed = 0
-        var attached = 0
         val q = PointSet(grid.dim)
         teleports.forEach(q::add)
         fastWheels.forEach(q::add)
         extensions.forEach(q::add)
-        while (installed < teleports.size && attached < extensions.size) {
+        while (installed < teleports.size && state.hasBooster(BoosterType.B)) {
             if (state.hasBooster(BoosterType.F)) {
                 state.apply(listOf(Accelerate))
                 sink(listOf(Accelerate))
@@ -312,18 +315,11 @@ object InstallUniformBeacons : Strategy {
 
             val distances = distanceToAll(state, state.robot.position)
             val next = q.asSequence().minBy { distances.getOrDefault(it, Int.MAX_VALUE) }!!
-            var path = state.bfs(state.robot.position) { it == next }
-            if (state.robot.fuelLeft > 0 && path.isEmpty()) {
-                // Hmm... are all paths of odd length? Try to reach next approx.
-                val neighborhood = Move.ALL.map { it(next) }.toTypedArray()
-                path = state.bfs(state.robot.position) { it in neighborhood }
-                // [next] is either one but last or at Manhattan distance 1 from it.
-                if (path[path.lastIndex - 1] != next) {
-                    path += next
-                }
-            }
+            val path = state.approxBfsTo(next)
+            check(path.last() == next)
             check(path.isNotEmpty())
             GreedyUnordered.follow(state, path, sink)
+            check(state.robot.position == next)
             when (next) {
                 in teleports -> q.add(targets[collected++])
                 in targets -> {
@@ -331,15 +327,26 @@ object InstallUniformBeacons : Strategy {
                     sink(listOf(InstallBeacon))
                     installed++
                 }
-                in extensions -> {
-                    val action = Attach(state.robot.attachmentPoint())
-                    state.apply(listOf(action))
-                    sink(listOf(action))
-                    attached++
-                }
             }
 
             q.remove(next)
         }
     }
+}
+
+private fun State.approxBfsTo(next: Point): List<Point> {
+    var path = bfs(robot.position) { it == next }
+    if (robot.fuelLeft > 0 && path.isEmpty()) {
+        val neighborhood = Move.ALL.map { it(next) }.toTypedArray() + arrayOf(next)
+        // Hmm... are all paths of odd length? Try to reach next approx.
+        path = bfs(robot.position) { it in neighborhood }
+        if (path.isEmpty()) {
+            // Maybe not. Wait and try again.
+            return listOf(robot.position) + approxBfsTo(next)
+        } else if (path[path.lastIndex - 1] != next) {
+            // [next] is either one but last or at Manhattan distance 1 from it.
+            return path + next
+        }
+    }
+    return path
 }
