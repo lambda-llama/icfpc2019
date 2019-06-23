@@ -32,7 +32,8 @@ fun nonInteractiveMain(
             GreedyUnorderedFBPartition,
             GreedyTurnoverFBPartition,
             CloneFactory,
-            WrapDistanceCount
+            WrapDistanceCount,
+            Weighted
     ).map { strategy ->
         when (strategy) {
 //            GreedyUnorderedFBPartition, GreedyTurnoverFBPartition ->

@@ -202,6 +202,32 @@ data class State(
             grid[point] = cell
         }
     }
+
+    fun canApply(robot: Robot, action: Action): Boolean {
+        return when (action) {
+            is Move -> {
+                val newPosition = robot.position.apply(action)
+                newPosition in grid && !grid[newPosition].isObstacle
+            }
+            is TurnClockwise -> {
+                true
+            }
+            is TurnCounter -> {
+                true
+            }
+            is Attach -> {
+                collectedBoosters[BoosterType.B]!! > 0
+                        && robot.tentacles.map { it.rotate(robot.orientation) }
+                                .map { it.manhattanDist(action.location) }.min()!! == 1
+            }
+            is Clone -> {
+                collectedBoosters[BoosterType.C]!! > 0
+                        && boosters[robot.position] == BoosterType.X
+            }
+            is NoOp -> true
+            else -> TODO("Not supported yet")
+        }
+    }
 }
 
 fun Point.apply(move: Move) = Point(x + move.dx, y + move.dy)
