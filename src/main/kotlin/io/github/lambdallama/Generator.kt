@@ -1,5 +1,7 @@
 package io.github.lambdallama
 
+import io.github.lambdallama.ui.launchGui
+import io.github.lambdallama.ui.visualize
 import java.io.File
 
 fun generatorMain(path: String) {
@@ -34,8 +36,17 @@ fun generatorMain(path: String) {
     val includePoints = parseRepSepPoints(rawInclude, ',')
     val excludePoints = parseRepSepPoints(rawExclude, ',')
 
-    println("$bNum, $eNum, $tSize, $vMin, $vMax")
-    println("Booster count: $boosterCount")
-    println("Include points: $includePoints")
-    println("Exclude points: $excludePoints")
+    var robot = Robot(Point(0, 0), mutableListOf(), Orientation.RIGHT)
+    var state = State(
+            ByteMatrix(tSize, tSize, Cell.FREE),
+            mutableMapOf(), mutableListOf(), mutableMapOf()
+    )
+    for (p in includePoints) {
+        state.grid[p] = Cell.WRAPPED
+    }
+    for (p in excludePoints) {
+        state.grid[p] = Cell.VOID
+    }
+    launchGui()
+    visualize(state, true)
 }
