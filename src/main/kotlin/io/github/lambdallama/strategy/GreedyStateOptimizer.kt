@@ -11,22 +11,22 @@ class GreedyStateOptimizer(
     val actionPolicy: ActionPolicy
 ) : Strategy {
 
-    override fun run(currentState: State, sink: ActionSink) {
-        ClonePhase.run(currentState, sink)
+    override fun run(state: State, sink: ActionSink) {
+        ClonePhase.run(state, sink)
 
         var isTerminal = false
         while (!isTerminal) {
             isTerminal = true
             val robotMoves = mutableListOf<Action>()
             var robotIndex = 0
-            while (robotIndex < currentState.robots.size) {
-                val robot = currentState.robots[robotIndex]
-                val moves = actionPolicy(currentState, robot)
+            while (robotIndex < state.robots.size) {
+                val robot = state.robots[robotIndex]
+                val moves = actionPolicy(state, robot)
                 val best = moves
                     .map { move ->
-                        val unmove = currentState.apply(robot, move)
-                        val q = stateFunction(currentState, robot)
-                        currentState.unapply(robot, unmove)
+                        val unmove = state.apply(robot, move)
+                        val q = stateFunction(state, robot)
+                        state.unapply(robot, unmove)
                         q to move
                     }.maxBy { it.first }
                 if (best == null) {
@@ -35,7 +35,7 @@ class GreedyStateOptimizer(
                     val bestMove = best.second
                     robotMoves.add(bestMove)
                     isTerminal = false
-                    currentState.apply(robot, bestMove)
+                    state.apply(robot, bestMove)
                 }
                 robotIndex += 1
             }
