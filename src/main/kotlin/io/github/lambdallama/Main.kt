@@ -34,6 +34,7 @@ fun nonInteractiveMain(
             GreedyTurnoverFBPartition,
             CloneFactory,
             phases(ClonePhase, WrapDistanceCount),
+            phases(CloneExtenderPhase, WrapDistanceCount),
             Weighted,
             WeightedAccelerated
     ).filter { strategyRegex.matches(it.name) } .map { strategy ->
@@ -175,5 +176,5 @@ fun main(args: Array<String>) {
     val state = State.parse(File(path).readText())
 
     launchGui()
-    WrapDistanceCount.run(state, visualize(state, false))
+    phases(CloneExtenderPhase, WrapDistanceCount).run(state, visualize(state, true))
 }
