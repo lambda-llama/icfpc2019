@@ -46,10 +46,10 @@ private const val DEPTH_MIN = 3
 private const val DEPTH_MAX = 5
 private const val EXTENDER_PICKUP_SCORE = 1000
 private const val ACCELERATION_PICKUP_SCORE = 500
-private const val DEFAULT_CELL_WEIGHT: Byte = 1
+private const val DEFAULT_CELL_WEIGHT: Byte = 5
 private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 25
-private const val CELL_WEIGHT_DECAY = 0.4
-private const val PREPROCESS_PASS_COUNT = 10
+private const val CELL_WEIGHT_DECAY = 0.35
+private const val PREPROCESS_PASS_COUNT = 20
 
 // Set to true for better visualizer support
 private const val LIVE = false
@@ -222,7 +222,7 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
                 for (y in 0 until weights.dim.y) {
                     val u = Point(x, y)
                     if (weights[u] == Cell(0) && state.grid[u].isWrapable) {
-                        nextLevelWeights[u] = Cell((weights[weights.neighbours(u).maxBy { weights[it].byte }!!].byte * CELL_WEIGHT_DECAY).toByte())
+                        nextLevelWeights[u] = Cell((weights.neighbours(u).sumBy { weights[it].byte.toInt() } * CELL_WEIGHT_DECAY).toByte())
                     }
                 }
             }
