@@ -132,7 +132,10 @@ data class State(
                 val n = collectedBoosters[BoosterType.F]!!
                 check(n > 0)
                 collectedBoosters[BoosterType.F] = n - 1
-                robot.fuelLeft += FUEL_INITIAL_VALUE + 1 // accounting for decrement below
+                robot.fuelLeft += FUEL_INITIAL_VALUE
+                if (robot.fuelLeft == FUEL_INITIAL_VALUE) {
+                    robot.fuelLeft += 1 // accounting for decrement below
+                }
             }
             is Clone -> {
                 check(boosters[robot.position] == BoosterType.X) {
