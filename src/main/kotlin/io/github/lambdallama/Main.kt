@@ -43,7 +43,9 @@ fun nonInteractiveMain(
         Weighted,
         WeightedAccelerated,
         phases(CloneExtenderPhase, Weighted),
-        phases(CloneExtenderPhase, WeightedAccelerated)
+        phases(CloneExtenderPhase, WeightedAccelerated),
+        phases(ClonePhase, Weighted),
+        phases(ClonePhase, WeightedAccelerated)
     ).filter { strategyRegex.matches(it.name) } .map { strategy ->
         val name = strategy.name
         val actions = mutableListOf<List<Action>>()
