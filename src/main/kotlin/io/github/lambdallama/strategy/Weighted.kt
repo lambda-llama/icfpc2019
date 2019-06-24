@@ -44,12 +44,8 @@ private val MOVES = ACTIONS.filterIsInstance<Move>()
 
 private const val DEPTH_MIN = 3
 private const val DEPTH_MAX = 5
-private const val EXTENDER_PICKUP_SCORE = 1000
-private const val ACCELERATION_PICKUP_SCORE = 500
-private const val DEFAULT_CELL_WEIGHT: Byte = 5
-private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 25
-private const val CELL_WEIGHT_DECAY = 0.35
-private const val PREPROCESS_PASS_COUNT = 20
+private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 10
+private const val PREPROCESS_PASS_COUNT = 10
 
 // Set to true for better visualizer support
 private const val LIVE = false
@@ -143,7 +139,7 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
         val moves = mutableListOf<Pair<Int, Action>>()
         ACTIONS.forEach { m -> moves.add(Pair(1, m)) }
         val possiblePath = mutableListOf<ReversibleAction>()
-        var maxScore = 0
+        var maxScore: Long = 0
         var bestPath = listOf<ReversibleAction>()
         while (moves.isNotEmpty()) {
             val (level, action) = moves.removeLast()
@@ -161,8 +157,9 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
                 continue
             }
 
-            val score = possiblePath.sumBy {
-                getActionWeight(it)
+            var score: Long = 0
+            for (a in possiblePath) {
+                score += getActionWeight(a)
             }
 
             if (score > maxScore) {
@@ -188,15 +185,17 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
         return bestPath.map { it.action }
     }
 
-    private fun getActionWeight(action: ReversibleAction): Int {
-        var score = action.wrappedPoints
-                .map { it.key }
-                .sumBy { weights[it].byte.toInt() }
+    private val ORDERS = listOf(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 10000000000)
+    private fun getActionWeight(action: ReversibleAction): Long {
+        var score: Long = 0
+        for ((k, _) in action.wrappedPoints) {
+            score += ORDERS[weights[k].byte.toInt()]
+        }
         if (action.pickedUpBooster == BoosterType.B) {
-            score += EXTENDER_PICKUP_SCORE
+            score = Long.MAX_VALUE / 10
         }
         if (enableAcceleration && action.pickedUpBooster == BoosterType.F) {
-            score += ACCELERATION_PICKUP_SCORE
+            score = Long.MAX_VALUE / 10
         }
         return score
     }
@@ -208,9 +207,9 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
             for (y in 0 until weights.dim.y) {
                 val u = Point(x, y)
                 if (state.grid[u].isWrapable) {
-                    if (state.grid.freeNeighbours(u).count() < 4) {
+                    if (state.grid.freeNeighbours(u).count() < 3) { // corners or tunnel ends
                         val bordersCount = 4 - state.grid.freeNeighbours(u).count()
-                        weights[u] = Cell((BORDER_CELL_INITIAL_WEIGHT * bordersCount).toByte())
+                        weights[u] = Cell((BORDER_CELL_INITIAL_WEIGHT).toByte())
                     }
                 }
             }
@@ -222,21 +221,15 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
                 for (y in 0 until weights.dim.y) {
                     val u = Point(x, y)
                     if (weights[u] == Cell(0) && state.grid[u].isWrapable) {
-                        nextLevelWeights[u] = Cell((weights.neighbours(u).sumBy { weights[it].byte.toInt() } * CELL_WEIGHT_DECAY).toByte())
+                        val max = weights[weights.neighbours(u).maxBy { weights[it].byte.toInt() }!!].byte
+                        if (max > 1) {
+                            nextLevelWeights[u] = Cell((max - 1).toByte())
+                        }
                     }
                 }
             }
             nextLevelWeights.forEach { (p, w) ->
                 weights[p] = w
-            }
-        }
-
-        for (x in 0 until weights.dim.x) {
-            for (y in 0 until weights.dim.y) {
-                val u = Point(x, y)
-                if (weights[u] == Cell(0) && state.grid[u].isWrapable) {
-                    weights[u] = Cell(DEFAULT_CELL_WEIGHT)
-                }
             }
         }
     }
