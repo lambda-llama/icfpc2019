@@ -42,8 +42,8 @@ fun nonInteractiveMain(
         phases(CloneExtenderPhase, FillAndExplore),
         Weighted,
         WeightedAccelerated,
-        phases(ExtenderPhase, Weighted),
-        phases(ExtenderPhase, WeightedAccelerated)
+        phases(CloneExtenderPhase, Weighted),
+        phases(CloneExtenderPhase, WeightedAccelerated)
     ).filter { strategyRegex.matches(it.name) } .map { strategy ->
         val name = strategy.name
         val actions = mutableListOf<List<Action>>()
@@ -169,7 +169,8 @@ fun main(args: Array<String>) {
                     "--show_bonus_count" -> showBonusCount = true
                     "--info_only" -> infoOnly = true
                     "--strategy" -> {
-                        strategyRegex = extra.removeAt(0)
+                        // TODO: fix the args parser to allow spaces
+                        strategyRegex = extra.removeAt(0).replace("_", " ")
                     }
                 }
             }
@@ -195,8 +196,8 @@ fun main(args: Array<String>) {
 
     launchGui()
     val s = phases(
-        InstallUniformBeacons,
-        GreedyUnorderedFBPartition)
+        CloneExtenderPhase,
+        Weighted)
 //    val s = InstallUniformBeacons
     s.run(state, visualize(state, false))
 }

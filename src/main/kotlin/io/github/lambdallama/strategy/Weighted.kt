@@ -1,7 +1,6 @@
 package io.github.lambdallama.strategy
 
 import io.github.lambdallama.*
-import java.util.*
 
 // Copied over from Greedy.kt
 private inline fun ByteMatrix.bfs(
@@ -61,81 +60,86 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
     override fun run(state: State, sink: ActionSink) {
         if (!LIVE) {
             (DEPTH_MIN until DEPTH_MAX + 1).map { depth ->
-                val actions = mutableListOf<Action>()
-                val execute = { s: State, a: Action ->
-                    actions.addAll(listOf(a))
-                    s.apply(s.robot, a)
-                    Unit
+                val allActions = mutableListOf<List<Action>>()
+                runWithDepth(depth, state.clone()) { actions ->
+                    allActions.add(actions)
                 }
-                runWithDepth(depth, state.clone(), execute)
-                actions
+                allActions
             }.minBy { it.size }!!
-                    .forEach { sink(listOf(it)) }
+                    .forEach { sink(it) }
         } else {
-            runWithDepth(DEPTH_MIN, state) { s, a ->
-                sink(listOf(a))
-                s.apply(s.robot, a)
-            }
+            runWithDepth(DEPTH_MIN, state, sink)
         }
     }
 
-    fun runWithDepth(depth: Int, state: State, execute: (State, Action) -> Unit) {
+    fun runWithDepth(depth: Int, state: State, sink: ActionSink) {
         precomputeWeights(state)
 
-        var pathToNextFreeCell = mutableListOf<Move>()
+        val pathsToNextFreeCell = state.robots.map {
+            Pair(it.id, mutableListOf<Move>())
+        }.toMap()
         while (state.hasWrappableCells) {
-            if (state.hasBooster(BoosterType.B)) {
-                execute(state, Attach(state.robot.attachmentPoint()))
-                continue
+            val actions = mutableListOf<Action>()
+            for (robot in state.robots) {
+                val action = getNextMove(state, robot, pathsToNextFreeCell.getValue(robot.id), depth)
+                state.apply(robot, action)
+                actions.add(action)
             }
-
-            if (enableAcceleration && state.hasBooster(BoosterType.F)) {
-                execute(state, Accelerate)
-                continue
-            }
-
-            if (pathToNextFreeCell.isNotEmpty()) {
-                if (state.robot.fuelLeft > 0) {
-                    val next = pathToNextFreeCell.last()
-                    // If we want to move twice - do it
-                    if (pathToNextFreeCell.size >= 2 && next == pathToNextFreeCell[pathToNextFreeCell.size - 2]) {
-                        execute(state, pathToNextFreeCell.removeLast())
-                        pathToNextFreeCell.removeLast()
-                        continue
-                    }
-                    // If we want to move once and we know we'll hit wall - do it
-                    val newPosition = next.invoke(next.invoke(state.robot.position))
-                    if (newPosition in state.grid && state.grid[newPosition].isObstacle) {
-                        execute(state, pathToNextFreeCell.removeLast())
-                        continue
-                    }
-                    // TODO: take acceleration into account when building path?
-                    // For now, just burn fuel
-                    while (state.robot.fuelLeft > 0) {
-                        execute(state, NoOp)
-                    }
-                }
-                execute(state, pathToNextFreeCell.removeLast())
-                continue
-            }
-
-            val bestPath = getBestWeightedPath(state, depth)
-            if (bestPath.isNotEmpty()) {
-                execute(state, bestPath[0])
-            } else {
-                pathToNextFreeCell = state.grid
-                        .bfs(state.robot.position) { state.grid[it].isWrapable }
-                        .drop(1)
-                        .fold(Pair(state.robot.position, mutableListOf<Move>()), { (prev, list), curr ->
-                            list.add(MOVES.first { it(prev) == curr })
-                            Pair(curr, list)
-                        }).second
-                pathToNextFreeCell.reverse()
-            }
+            sink(actions)
         }
     }
 
-    private fun getBestWeightedPath(state: State, depth: Int): List<Action> {
+    private fun getNextMove(state: State, robot: Robot, pathToNextFreeCell: MutableList<Move>, depth: Int): Action {
+        if (!state.hasWrappableCells) {
+            return NoOp
+        }
+
+        if (state.hasBooster(BoosterType.B)) {
+            return Attach(robot.attachmentPoint())
+        }
+
+        if (enableAcceleration && state.hasBooster(BoosterType.F)) {
+            return Accelerate
+        }
+
+        if (pathToNextFreeCell.isNotEmpty()) {
+            if (robot.fuelLeft > 0) {
+                val next = pathToNextFreeCell.last()
+                // If we want to move twice - do it
+                if (pathToNextFreeCell.size >= 2 && next == pathToNextFreeCell[pathToNextFreeCell.size - 2]) {
+                    pathToNextFreeCell.removeLast()
+                    return pathToNextFreeCell.removeLast()
+                }
+                // If we want to move once and we know we'll hit wall - do it
+                val newPosition = next.invoke(next.invoke(robot.position))
+                if (newPosition in state.grid && state.grid[newPosition].isObstacle) {
+                    return pathToNextFreeCell.removeLast()
+                }
+                // TODO: take acceleration into account when building path?
+                // For now, just burn fuel
+                return NoOp
+            }
+            return pathToNextFreeCell.removeLast()
+        }
+
+        val bestPath = getBestWeightedPath(state, robot, depth)
+        if (bestPath.isNotEmpty()) {
+            return bestPath[0]
+        }
+
+        pathToNextFreeCell.addAll(state.grid
+                .bfs(robot.position) { state.grid[it].isWrapable }
+                .drop(1)
+                .fold(Pair(robot.position, mutableListOf<Move>()), { (prev, list), curr ->
+                    list.add(MOVES.first { it(prev) == curr })
+                    Pair(curr, list)
+                }).second)
+        pathToNextFreeCell.reverse()
+        // This won't go deeper
+        return getNextMove(state, robot, pathToNextFreeCell, depth)
+    }
+
+    private fun getBestWeightedPath(state: State, robot: Robot, depth: Int): List<Action> {
         val moves = mutableListOf<Pair<Int, Action>>()
         ACTIONS.forEach { m -> moves.add(Pair(1, m)) }
         val possiblePath = mutableListOf<ReversibleAction>()
@@ -145,13 +149,13 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
             val (level, action) = moves.removeLast()
 
             while (possiblePath.count() >= level) {
-                state.unapply(state.robot, possiblePath.removeLast())
+                state.unapply(robot, possiblePath.removeLast())
             }
 
-            if (!state.canApply(state.robot, action)) {
+            if (!state.canApply(robot, action)) {
                 continue
             }
-            possiblePath.add(state.apply(state.robot, action))
+            possiblePath.add(state.apply(robot, action))
             if (level < depth) {
                 ACTIONS.forEach { m -> moves.add(Pair(level + 1, m)) }
                 continue
@@ -179,7 +183,7 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
         }
 
         while (possiblePath.isNotEmpty()) {
-            state.unapply(state.robot, possiblePath.removeLast())
+            state.unapply(robot, possiblePath.removeLast())
         }
         return bestPath.map { it.action }
     }
