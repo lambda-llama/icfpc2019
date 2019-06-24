@@ -52,28 +52,38 @@ private const val BORDER_CELL_INITIAL_WEIGHT: Byte = 25
 private const val CELL_WEIGHT_DECAY = 0.4
 private const val PREPROCESS_PASS_COUNT = 10
 
+// Set to true for better visualizer support
+private const val LIVE = false
+
 open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
     private var weights: ByteMatrix = ByteMatrix(0, 0, Cell.VOID)
-    private var wrapableCellsLeft: Int = 0
 
     override fun run(state: State, sink: ActionSink) {
-        (DEPTH_MIN until DEPTH_MAX + 1).map { depth ->
-            val actions = mutableListOf<Action>()
-            val execute = { s: State, a: Action ->
-                actions.addAll(listOf(a))
-                wrapableCellsLeft -= s.apply(s.robot, a).wrappedPoints.count()
+        if (!LIVE) {
+            (DEPTH_MIN until DEPTH_MAX + 1).map { depth ->
+                val actions = mutableListOf<Action>()
+                val execute = { s: State, a: Action ->
+                    actions.addAll(listOf(a))
+                    s.apply(s.robot, a)
+                    Unit
+                }
+                runWithDepth(depth, state.clone(), execute)
+                actions
+            }.minBy { it.size }!!
+                    .forEach { sink(listOf(it)) }
+        } else {
+            runWithDepth(DEPTH_MIN, state) { s, a ->
+                sink(listOf(a))
+                s.apply(s.robot, a)
             }
-            runWithDepth(depth, state.clone(), execute)
-            actions
-        }.minBy { it.size }!!
-            .forEach { sink(listOf(it)) }
+        }
     }
 
-    private fun runWithDepth(depth: Int, state: State, execute: (State, Action) -> Unit) {
+    fun runWithDepth(depth: Int, state: State, execute: (State, Action) -> Unit) {
         precomputeWeights(state)
 
         var pathToNextFreeCell = mutableListOf<Move>()
-        while (wrapableCellsLeft > 0) {
+        while (state.hasWrappableCells) {
             if (state.hasBooster(BoosterType.B)) {
                 execute(state, Attach(state.robot.attachmentPoint()))
                 continue
@@ -194,7 +204,6 @@ open class WeightedBase(private val enableAcceleration: Boolean): Strategy {
             for (y in 0 until weights.dim.y) {
                 val u = Point(x, y)
                 if (state.grid[u].isWrapable) {
-                    wrapableCellsLeft++
                     if (state.grid.freeNeighbours(u).count() < 4) {
                         val bordersCount = 4 - state.grid.freeNeighbours(u).count()
                         weights[u] = Cell((BORDER_CELL_INITIAL_WEIGHT * bordersCount).toByte())
