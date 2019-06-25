@@ -1,0 +1,3 @@
+# Third-party code
+lambda-client linguist-detectable=false
+validator/validator.js linguist-detectable=false
